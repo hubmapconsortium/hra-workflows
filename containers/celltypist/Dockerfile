@@ -3,4 +3,7 @@ FROM python:3
 COPY context/* .
 RUN pip install -r requirements-freeze.txt
 
-ENTRYPOINT ["python", "main.py"]
+ENV CELLTYPIST_FOLDER="/models"
+RUN python -c "import celltypist; celltypist.models.download_models()"
+
+ENTRYPOINT ["python", "/main.py"]
