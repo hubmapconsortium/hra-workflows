@@ -11,11 +11,11 @@ inputs:
     type: File
     inputBinding:
       position: 1
-  model:
+  organ:
     type: string
     inputBinding:
       position: 2
-      prefix: --model=
+      prefix: --organ=
       separate: false
   existingAnnotationsColumn:
     type: string?
