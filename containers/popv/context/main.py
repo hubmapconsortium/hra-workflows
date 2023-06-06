@@ -1,4 +1,7 @@
 import argparse
+import itertools
+import json
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -7,43 +10,49 @@ import popv
 import scanpy
 from scanpy import AnnData
 
-TISSUES = [
-    "Bladder",
-    "Blood",
-    "Bone_Marrow",
-    "Fat",
-    "Heart",
-    "Kidney",
-    "Large_Intestine",
-    "Liver",
-    "Lung",
-    "Lymph_Node",
-    "Mammary",
-    "Muscle",
-    "Pancreas",
-    "Prostate",
-    "Salivary Gland",
-    "Skin",
-    "Small_Intestine",
-    "Spleen",
-    "Thymus",
-    "Trachea",
-    "Vasculature",
-]
+
+_MODELS_DIR = Path(os.environ["MODELS_DIR"])
+
+
+def _down_sample(data: AnnData, count: int):
+    return data[np.random.choice(data.obs_names, count, replace=True)]
+
+
+def _find_models():
+    prefix = "pretrained_models_"
+    suffix = "_ts"
+    dirs = _MODELS_DIR.glob(f"{prefix}*{suffix}")
+    return [(d.name[len(prefix) : -len(suffix)], d.name) for d in dirs]
+
+
+def _organ_or_tissue(value: str):
+    with open("./organ-mapping.json") as mapping_file:
+        mapping = json.load(mapping_file)
+
+    value = value.lower()
+    items = itertools.chain(mapping.values(), _find_models())
+    for key, tissue in items:
+        if key.lower() == value:
+            return tissue
+
+    raise ValueError("Invalid organ")
 
 
 def _get_arg_parser():
     parser = argparse.ArgumentParser(description="Compute annotations using popv")
     parser.add_argument("data", type=scanpy.read_h5ad, help="h5ad data file")
-    parser.add_argument("--tissue", choices=TISSUES, required=True, help="Tissue type")
+    parser.add_argument(
+        "--organ",
+        type=_organ_or_tissue,
+        required=True,
+        dest="tissue",
+        help="Organ uberon id",
+    )
     parser.add_argument(
         "--reference-data",
         type=scanpy.read_h5ad,
         default=AnnData(),
         help="h5ad reference data file",
-    )
-    parser.add_argument(
-        "--models-dir", type=Path, default="./models", help="Models directory"
     )
     parser.add_argument(
         "--cell-ontology-dir",
@@ -78,10 +87,6 @@ def _get_arg_parser():
     )
 
     return parser
-
-
-def _down_sample(data: AnnData, count: int):
-    return data[np.random.choice(data.obs_names, count, replace=True)]
 
 
 def prepare_query(
@@ -130,7 +135,7 @@ def annotate(query_data: AnnData) -> AnnData:
         # seen_result_key is not added in fast mode but still expected during compute_consensus
         # https://github.com/YosefLab/PopV/blob/main/popv/annotation.py#L64
         # https://github.com/YosefLab/PopV/blob/main/popv/algorithms/_onclass.py#L199
-        methods=["knn_on_scvi", "scanvi", "svm", "rf", "celltypist"]
+        methods=["knn_on_scvi", "scanvi", "svm", "rf", "celltypist"],
     )
     return query_data
 
@@ -146,7 +151,7 @@ def main(args: argparse.Namespace):
     query_data = prepare_query(
         data,
         reference_data,
-        model_dir=args.models_dir / f"pretrained_models_{args.tissue}_ts",
+        model_dir=_MODELS_DIR / args.tissue,
         cell_ontology_dir=args.cell_ontology_dir,
         query_labels_key=args.query_labels_key,
         query_batch_key=args.query_batch_key,

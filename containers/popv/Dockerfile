@@ -2,7 +2,7 @@ FROM tensorflow/tensorflow:2.11.1
 
 RUN apt-get -y update && apt-get -y install python3-dev g++ git wget
 
-ENV ZENODO_MODELS_ID=7580707
+ENV MODELS_DIR=./models ZENODO_MODELS_ID=7580707
 COPY context/download-models.sh .
 RUN ./download-models.sh
 
