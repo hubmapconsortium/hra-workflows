@@ -26,7 +26,7 @@ def _find_models():
 
 
 def _organ_or_tissue(value: str):
-    with open("./organ-mapping.json") as mapping_file:
+    with open("/organ-mapping.json") as mapping_file:
         mapping = json.load(mapping_file)
 
     value = value.lower()

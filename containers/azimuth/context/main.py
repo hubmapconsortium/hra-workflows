@@ -10,7 +10,7 @@ REFERENCES = ["RK", "LK", "RL", "LL", "HT"]
 
 
 def _organ_or_reference(value: str):
-    with open("./organ-mapping.json") as mapping_file:
+    with open("/organ-mapping.json") as mapping_file:
         mapping = json.load(mapping_file)
 
     value = value.lower()

@@ -10,7 +10,7 @@ from scanpy import AnnData
 
 
 def _organ_or_model(value: str):
-    with open("./organ-mapping.json") as mapping_file:
+    with open("/organ-mapping.json") as mapping_file:
         mapping = json.load(mapping_file)
 
     value = value.lower()
