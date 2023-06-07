@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MODELS_DIR=./models
+# Defined by user: MODELS_DIR and ZENODO_MODELS_ID
 MODELS_TMP_DIR=$MODELS_DIR/tmp
 
 mkdir -p $MODELS_DIR $MODELS_TMP_DIR
