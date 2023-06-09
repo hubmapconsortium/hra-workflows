@@ -23,3 +23,7 @@ outputs:
     type: File
     outputBinding:
       glob: annotations.csv
+  annotated_matrix:
+    type: File
+    outputBinding:
+      glob: annotated_matrix.h5ad

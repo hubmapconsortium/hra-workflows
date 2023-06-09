@@ -10,7 +10,6 @@ import popv
 import scanpy
 from scanpy import AnnData
 
-
 _MODELS_DIR = Path(os.environ["MODELS_DIR"])
 
 
@@ -83,7 +82,13 @@ def _get_arg_parser():
         help="Limit data to n randomly selected records",
     )
     parser.add_argument(
-        "-o", "--output", type=Path, help="Output file", default="annotations.csv"
+        "-o", "--output", type=Path, default="annotations.csv", help="Output file"
+    )
+    parser.add_argument(
+        "--output-matrix",
+        type=Path,
+        default="annotated_matrix.h5ad",
+        help="Annotated matrix output file",
     )
 
     return parser
@@ -162,6 +167,7 @@ def main(args: argparse.Namespace):
     )
 
     result = annotate(query_data)
+    result.write_h5ad(args.output_matrix)
     result.obs.to_csv(args.output)
 
 

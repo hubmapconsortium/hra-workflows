@@ -1,1 +1,2 @@
-# Currently only depends on standard library packages
+scanpy==1.9.*
+anndata==0.9.*

@@ -1,8 +1,15 @@
 import argparse
 import itertools
 import json
+import os
 import subprocess
 from pathlib import Path
+
+import scanpy
+
+# From azimuth-annotate docker image
+import write_metadata
+
 
 # Preferably theses values should be read from somewhere but they are
 # currently only embedded in the azimuth_analysis R script
@@ -33,22 +40,39 @@ def _get_arg_parser():
         help="Organ uberon id",
     )
     parser.add_argument(
-        "-o", "--output", type=Path, help="Output file", default="annotations.csv"
+        "-o", "--output", type=Path, default="annotations.csv", help="Output file"
+    )
+    parser.add_argument(
+        "--output-matrix",
+        type=Path,
+        default="annotated_matrix.h5ad",
+        help="Annotated matrix output file",
     )
 
     return parser
 
 
 def main(args: argparse.Namespace):
-    command = [
-        "Rscript",
-        "/azimuth_analysis.R",
-        args.reference,
-        args.data,
-        args.data,
-        args.output,
-    ]
-    subprocess.run(command, capture_output=True, check=True)
+    annotate_outputs = (
+        "./secondary_analysis.h5ad",
+        "./version_metadata.json",
+        "./annotations.csv",
+    )
+    subprocess.run(
+        [
+            "Rscript",
+            "/azimuth_analysis.R",
+            args.reference,
+            args.data,
+            args.data,
+        ],
+        capture_output=True,
+        check=True,
+    )
+
+    write_metadata.main(*annotate_outputs)
+    scanpy.read_h5ad(annotate_outputs[0]).obs.to_csv(args.output)
+    os.rename(annotate_outputs[0], args.output_matrix)
 
 
 if __name__ == "__main__":

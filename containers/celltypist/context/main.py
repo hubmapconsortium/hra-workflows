@@ -37,7 +37,13 @@ def _get_arg_parser():
         "--existing-annotations-column", help="Column with existing annotations"
     )
     parser.add_argument(
-        "--output", type=Path, help="Output file", default="annotations.csv"
+        "-o", "--output", type=Path, default="annotations.csv", help="Output file"
+    )
+    parser.add_argument(
+        "--output-matrix",
+        type=Path,
+        default="annotated_matrix.h5ad",
+        help="Annotated matrix output file",
     )
 
     return parser
@@ -74,6 +80,7 @@ def main(args: argparse.Namespace):
         matches = lambda row: row[existing_annotations_column] == row["majority_voting"]
         annotations.obs["exp_vs_pred"] = annotations.obs.apply(matches, axis=1)
 
+    annotations.write_h5ad(args.output_matrix)
     annotations.obs.to_csv(args.output, index=True)
 
 
