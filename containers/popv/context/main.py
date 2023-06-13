@@ -29,7 +29,7 @@ def _organ_or_tissue(value: str):
         mapping = json.load(mapping_file)
 
     value = value.lower()
-    items = itertools.chain(mapping.values(), _find_models())
+    items = itertools.chain(mapping.items(), _find_models())
     for key, tissue in items:
         if key.lower() == value:
             return tissue

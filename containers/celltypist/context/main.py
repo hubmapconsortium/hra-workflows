@@ -15,7 +15,7 @@ def _organ_or_model(value: str):
 
     value = value.lower()
     models = celltypist.models.get_all_models()
-    items = itertools.chain(mapping.values(), zip(models, models))
+    items = itertools.chain(mapping.items(), zip(models, models))
     for key, model in items:
         if key.lower() == value:
             return celltypist.models.Model.load(model)

@@ -21,7 +21,7 @@ def _organ_or_reference(value: str):
         mapping = json.load(mapping_file)
 
     value = value.lower()
-    items = itertools.chain(mapping.values(), zip(REFERENCES, REFERENCES))
+    items = itertools.chain(mapping.items(), zip(REFERENCES, REFERENCES))
     for key, reference in items:
         if key.lower() == value:
             return reference
