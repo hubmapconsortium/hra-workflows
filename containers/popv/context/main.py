@@ -56,7 +56,7 @@ def _get_arg_parser():
     parser.add_argument(
         "--cell-ontology-dir",
         type=Path,
-        default="./ontology",
+        default="/ontology",
         help="Cell ontology directory",
     )
     parser.add_argument("--query-labels-key", help="Data labels key")
