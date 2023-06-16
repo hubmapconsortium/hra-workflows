@@ -126,8 +126,8 @@ def prepare_query(
         n_samples_per_label=max(n_samples_per_label, min_n_samples_per_label),
         cl_obo_folder=str(cell_ontology_dir) + "/",
         compute_embedding=True,
-        hvg=None
-        # Maybe set use_gpu=True
+        hvg=None,
+        use_gpu=False # Using gpu with docker requires additional setup
     )
 
     return query.adata
@@ -137,7 +137,7 @@ def annotate(query_data: AnnData) -> AnnData:
     popv.annotation.annotate_data(
         query_data,
         # TODO: onclass has been removed due to error in fast mode
-        # seen_result_key is not added in fast mode but still expected during compute_consensus
+        # seen_result_key is not added to the result in fast mode but still expected during compute_consensus
         # https://github.com/YosefLab/PopV/blob/main/popv/annotation.py#L64
         # https://github.com/YosefLab/PopV/blob/main/popv/algorithms/_onclass.py#L199
         methods=["knn_on_scvi", "scanvi", "svm", "rf", "celltypist"],
