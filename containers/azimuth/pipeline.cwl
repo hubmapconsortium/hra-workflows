@@ -13,11 +13,8 @@ inputs:
     inputBinding:
       position: 0
   referenceData:
-    type: File
-    doc: Reference data set
-    inputBinding:
-      prefix: --reference-data=
-      separate: false
+    type: File?
+    doc: Not used by azimuth
   organ:
     type: string
     doc: Organ uberon id in format 'UBERON:1234'
