@@ -40,6 +40,12 @@ def _get_arg_parser():
         help="Organ uberon id",
     )
     parser.add_argument(
+        "--reference-data",
+        type=Path,
+        required=True,
+        help="h5ad reference data file",
+    )
+    parser.add_argument(
         "-o", "--output", type=Path, default="annotations.csv", help="Output file"
     )
     parser.add_argument(
@@ -64,7 +70,7 @@ def main(args: argparse.Namespace):
             "/azimuth_analysis.R",
             args.reference,
             args.data,
-            args.data,
+            args.reference_data,
         ],
         capture_output=True,
         check=True,

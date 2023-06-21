@@ -50,7 +50,7 @@ def _get_arg_parser():
     parser.add_argument(
         "--reference-data",
         type=scanpy.read_h5ad,
-        default=AnnData(),
+        required=True,
         help="h5ad reference data file",
     )
     parser.add_argument(
