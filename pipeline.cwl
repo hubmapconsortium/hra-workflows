@@ -9,8 +9,13 @@ requirements:
 inputs:
   matrix:
     type: File
+    doc: Data to annotate
+  referenceData:
+    type: File
+    doc: Reference data set
   organ:
     type: string
+    doc: Organ uberon id in format 'UBERON:1234'
 
 outputs:
   output_dirs:
@@ -22,6 +27,7 @@ steps:
     run: containers/azimuth/pipeline.cwl
     in:
       matrix: matrix
+      referenceData: referenceData
       organ: organ
     out: [annotations, annotated_matrix]
 
@@ -29,6 +35,7 @@ steps:
     run: containers/celltypist/pipeline.cwl
     in:
       matrix: matrix
+      referenceData: referenceData
       organ: organ
     out: [annotations, annotated_matrix]
 
@@ -36,6 +43,7 @@ steps:
     run: containers/popv/pipeline.cwl
     in:
       matrix: matrix
+      referenceData: referenceData
       organ: organ
     out: [annotations, annotated_matrix]
 
