@@ -16,7 +16,7 @@ inputs:
     type: File
     doc: Reference data set
     inputBinding:
-      prefix: --reference-organ=
+      prefix: --reference-data=
       separate: false
   organ:
     type: string
