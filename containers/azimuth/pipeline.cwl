@@ -9,14 +9,26 @@ requirements:
 inputs:
   matrix:
     type: File
+    doc: Data to annotate
     inputBinding:
-      position: 1
+      position: 0
+  referenceData:
+    type: File
+    doc: Reference data set
+    inputBinding:
+      prefix: --reference-organ=
+      separate: false
   organ:
     type: string
+    doc: Organ uberon id in format 'UBERON:1234'
     inputBinding:
-      position: 2
       prefix: --organ=
       separate: false
+  options:
+    type:
+      - "null"
+      - type: record
+        fields: {}
 
 outputs:
   annotations:
