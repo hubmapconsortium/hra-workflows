@@ -63,6 +63,7 @@ def normalize_id(id: str) -> str:
     id = id.lower().strip()
     id = _NON_WORDS_REGEX.sub("-", id)
     id = _NON_ALHPA_NUM_HYPHEN_REGEX.sub("", id)
+    id = "ASCTB-TEMP:" + id
     return id
 
 
@@ -134,7 +135,7 @@ def _get_arg_parser():
         "-o",
         "--output",
         type=argparse.FileType("w"),
-        default="summary.json",
+        default="summary.jsonld",
         help="Output file",
     )
 

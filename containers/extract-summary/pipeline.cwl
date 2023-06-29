@@ -47,4 +47,4 @@ outputs:
   summary:
     type: File
     outputBinding:
-      glob: summary.json
+      glob: summary.jsonld
