@@ -1,0 +1,29 @@
+type: record
+name: options
+label: Extract summary options
+fields:
+  annotationMethod:
+    type: string
+    doc: Method used to extract annotations
+    inputBinding:
+      prefix: --annotation-method
+  cellLabelColumn:
+    type: string
+    doc: Cell label column. Used for grouping if cellIdColumn is not provided.
+    inputBinding:
+      prefix: --cell-label-column
+  cellIdColumn:
+    type: string?
+    doc: Optional cell id column. Groups by label if not provided.
+    inputBinding:
+      prefix: --cell-id-column
+  cellSource:
+    type: string?
+    doc: Cell source. Must be an IRI.
+    inputBinding:
+      prefix: --cell-source
+  jsonldContext:
+    type: File?
+    doc: Base jsonld context to add summary to.
+    inputBinding:
+      prefix: --jsonld-context

@@ -1,0 +1,9 @@
+type: record
+name: options
+label: Celltypist specific options
+fields:
+  existingAnnotationsColumn:
+    type: string?
+    doc: Column with existing annotation to compare predictions against
+    inputBinding:
+      prefix: --existing-annotations-column

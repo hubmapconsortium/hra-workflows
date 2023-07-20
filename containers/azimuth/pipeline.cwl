@@ -5,27 +5,22 @@ cwlVersion: v1.0
 requirements:
   DockerRequirement:
     dockerPull: ghcr.io/hubmapconsortium/hra-workflows/azimuth:main
+  SchemaDefRequirement:
+    types:
+      - $import: ./options.yml
 
 inputs:
   matrix:
     type: File
-    doc: Data to annotate
+    label: Data to annotate in h5ad format
     inputBinding:
       position: 0
-  referenceData:
-    type: File?
-    doc: Not used by azimuth
   organ:
     type: string
-    doc: Organ uberon id in format 'UBERON:1234'
+    label: Organ uberon id in format 'UBERON:1234'
     inputBinding:
-      prefix: --organ=
-      separate: false
-  options:
-    type:
-      - "null"
-      - type: record
-        fields: {}
+      prefix: --organ
+  options: ./options.yml#options
 
 outputs:
   annotations:

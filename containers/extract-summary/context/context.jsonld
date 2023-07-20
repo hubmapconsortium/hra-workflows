@@ -8,8 +8,14 @@
       "@id": "https://purl.org/ccf/ASCTB-TEMP_",
       "@prefix": true
     },
-    
+    "ctpop": {
+      "@id": "https://cns-iu.github.io/hra-cell-type-populations-supporting-information/data/enriched_rui_locations.jsonld#",
+      "@prefix": true
+    },
 
+    "as_3d_id": {
+      "@type": "@id"
+    },
     "as_id": {
       "@type": "@id"
     },
@@ -22,6 +28,13 @@
     },
     "collisions": {
       "@id": "ccf:has_collision_item"
+    },
+    "corridor_source": {
+      "@reverse": "ccf:has_corridor",
+      "@type": "@id"
+    },
+    "corridor": {
+      "@id": "ccf:has_corridor"
     },
     "summaries": {
       "@id": "ccf:has_cell_summary"

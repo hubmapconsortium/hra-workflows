@@ -15,7 +15,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        container: [azimuth, celltypist, popv]
+        container: [azimuth, celltypist, extract-summary, popv]
     
     steps:
       - name: Set up Docker Buildx

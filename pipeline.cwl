@@ -1,86 +1,44 @@
 #!/usr/bin/env cwl-runner
 class: Workflow
-cwlVersion: v1.0
+cwlVersion: v1.2
 
 requirements:
   MultipleInputFeatureRequirement: {}
+  ScatterFeatureRequirement: {}
   SubworkflowFeatureRequirement: {}
+  SchemaDefRequirement:
+    types:
+      - $import: ./containers/azimuth/options.yml
+      - $import: ./containers/celltypist/options.yml
+      - $import: ./containers/popv/options.yml
+      - $import: ./containers/extract-summary/options.yml
 
 inputs:
-  matrix:
-    type: File
-    doc: Data to annotate
-  referenceData:
-    type: File
-    doc: Reference data set
-  organ:
-    type: string
-    doc: Organ uberon id in format 'UBERON:1234'
+  matrix: File
+  organ: string
+  algorithms:
+    type:
+      type: array
+      items:
+        type: record
+        fields:
+          azimuth: ./containers/azimuth/options.yml#options?
+          celltypist: ./containers/celltypist/options.yml#options?
+          popv: ./containers/popv/options.yml#options?
+          extract: ./containers/extract-summary/options.yml#options
+          directory: string?
 
 outputs:
-  output_dirs:
+  directories:
     type: Directory[]
-    outputSource: collect/dirs
+    outputSource: runEach/directory
 
 steps:
-  azimuth:
-    run: containers/azimuth/pipeline.cwl
+  runEach:
+    run: ./steps/run-one.cwl
+    scatter: algorithm
     in:
       matrix: matrix
-      referenceData: referenceData
       organ: organ
-    out: [annotations, annotated_matrix]
-
-  celltypist:
-    run: containers/celltypist/pipeline.cwl
-    in:
-      matrix: matrix
-      referenceData: referenceData
-      organ: organ
-    out: [annotations, annotated_matrix]
-
-  popv:
-    run: containers/popv/pipeline.cwl
-    in:
-      matrix: matrix
-      referenceData: referenceData
-      organ: organ
-    out: [annotations, annotated_matrix]
-
-  collect:
-    run:
-      doc: Collect output files from each algorithm into separate output directories
-      class: ExpressionTool
-      requirements:
-        - class: InlineJavascriptRequirement
-          expressionLib:
-            - |
-              function inputsToDirs(inputs) {
-                var dirs = [];
-                for (var group in inputs) {
-                  dirs.push({
-                    class: "Directory",
-                    basename: group,
-                    listing: inputs[group]
-                  });
-                }
-
-                return dirs;
-              }
-
-      inputs:
-        azimuth: File[]
-        celltypist: File[]
-        popv: File[]
-
-      outputs:
-        dirs: Directory[]
-
-      expression: |
-        $({ dirs: inputsToDirs(inputs) })
-
-    in:
-      azimuth: [azimuth/annotations, azimuth/annotated_matrix]
-      celltypist: [celltypist/annotations, celltypist/annotated_matrix]
-      popv: [popv/annotations, popv/annotated_matrix]
-    out: [dirs]
+      algorithm: algorithms
+    out: [directory]

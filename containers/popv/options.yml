@@ -1,0 +1,41 @@
+type: record
+name: options
+label: Popv specific options
+fields:
+  referenceData:
+    type: File
+    label: Reference data set in h5ad format
+    inputBinding:
+      prefix: --reference-data
+  cellOntologyDirectory:
+    type: string?
+    inputBinding:
+      prefix: --cell-ontology-dir
+  queryLabelsKey:
+    type: string?
+    inputBinding:
+      prefix: --query-labels-key
+  queryBatchKey:
+    type: string?
+    inputBinding:
+      prefix: --query-batch-key
+  referenceLabelsKey:
+    type: string?
+    inputBinding:
+      prefix: --ref-labels-key
+  referenceBatchKey:
+    type: string?
+    inputBinding:
+      prefix: --ref-batch-key
+  unknownLabelsKey:
+    type: string?
+    inputBinding:
+      prefix: --unknown-labels-key
+  samplesPerLabel:
+    type: int?
+    inputBinding:
+      prefix: --samples-per-label
+  sampleSize:
+    type: int?
+    inputBinding:
+      prefix: --sample-size

@@ -1,0 +1,4 @@
+type: record
+name: options
+label: Azimuth specific options
+fields: {}
