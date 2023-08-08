@@ -1,90 +1,52 @@
-import argparse
-import itertools
-import json
 import logging
 from pathlib import Path
 
 import celltypist
 import scanpy
-from scanpy import AnnData
+
+# From shared docker image
+from shared.algorithm import Algorithm, OrganLookup, add_common_arguments
 
 
-def _organ_or_model(value: str):
-    with open("/organ-mapping.json") as mapping_file:
-        mapping = json.load(mapping_file)
+class CelltypistOrganLookup(OrganLookup[celltypist.Model]):
+    def get_builtin_options(self):
+        models = celltypist.models.get_all_models()
+        return map(lambda model: (model, self.from_raw(model)), models)
 
-    value = value.lower()
-    models = celltypist.models.get_all_models()
-    items = itertools.chain(mapping.items(), zip(models, models))
-    for key, model in items:
-        if key.lower() == value:
-            return celltypist.models.Model.load(model)
-
-    raise ValueError("Invalid organ")
+    def from_raw(self, id: str):
+        return celltypist.models.Model.load(id)
 
 
-def _get_arg_parser():
-    parser = argparse.ArgumentParser(description="Compute annotations using celltypist")
-    parser.add_argument("data", type=scanpy.read_h5ad, help="h5ad data file")
-    parser.add_argument(
-        "--organ",
-        type=_organ_or_model,
-        required=True,
-        dest="model",
-        help="Organ uberon id",
-    )
-    parser.add_argument(
-        "--existing-annotations-column", help="Column with existing annotations"
-    )
-    parser.add_argument(
-        "-o", "--output", type=Path, default="annotations.csv", help="Output file"
-    )
-    parser.add_argument(
-        "--output-matrix",
-        type=Path,
-        default="annotated_matrix.h5ad",
-        help="Annotated matrix output file",
-    )
+class CelltypistAlgorithm(Algorithm[celltypist.Model, dict]):
+    def __init__(self):
+        super().__init__(CelltypistOrganLookup)
 
-    return parser
+    def do_run(self, matrix: Path, organ: celltypist.Model, options: dict):
+        data = scanpy.read_h5ad(matrix)
+        data = self.normalize(data)
+        return celltypist.annotate(data, organ, majority_voting=True).to_adata()
 
+    def normalize(self, data: scanpy.AnnData) -> scanpy.AnnData:
+        primary_column = "feature_name"
+        alternative_primary_column = "gene_symbol"
+        if primary_column not in data.var.columns:
+            logging.warning(
+                f"Missing {primary_column} data column. Attempting to use {alternative_primary_column} instead"
+            )
+            data.var = data.var.rename({alternative_primary_column: primary_column})
 
-def normalize(data: AnnData) -> AnnData:
-    primary_column = "feature_name"
-    alternative_primary_column = "gene_symbol"
-    if primary_column not in data.var.columns:
-        logging.warning(
-            f"Missing {primary_column} data column. Attempting to use {alternative_primary_column} instead"
-        )
-        data.var = data.var.rename({alternative_primary_column: primary_column})
+        # NOTE: I've excluded some of the original code from an if statement that is always false
+        # https://github.com/cns-iu/ct-ann-predictive-analytics/blob/main/celltypist/celltypist_prediction_pipeline.py#L116
 
-    # Note: I've excluded some of the original code from an if statement that is always false
-    # https://github.com/cns-iu/ct-ann-predictive-analytics/blob/main/celltypist/celltypist_prediction_pipeline.py#L116
-
-    scanpy.pp.normalize_total(data, target_sum=1e4)
-    scanpy.pp.log1p(data)
-    data.var_names_make_unique()
-    return data
-
-
-def annotate(data: AnnData, model: celltypist.models.Model) -> AnnData:
-    return celltypist.annotate(data, model, majority_voting=True).to_adata()
-
-
-def main(args: argparse.Namespace):
-    data = normalize(args.data)
-    annotations = annotate(data, args.model)
-    existing_annotations_column = args.existing_annotations_column
-
-    if existing_annotations_column:
-        matches = lambda row: row[existing_annotations_column] == row["majority_voting"]
-        annotations.obs["exp_vs_pred"] = annotations.obs.apply(matches, axis=1)
-
-    annotations.write_h5ad(args.output_matrix)
-    annotations.obs.to_csv(args.output, index=True)
+        scanpy.pp.normalize_total(data, target_sum=1e4)
+        scanpy.pp.log1p(data)
+        data.var_names_make_unique()
+        return data
 
 
 if __name__ == "__main__":
-    parser = _get_arg_parser()
+    parser = add_common_arguments()
     args = parser.parse_args()
-    main(args)
+    algorithm = CelltypistAlgorithm()
+    result = algorithm.run(**args.__dict__)
+    result.save()
