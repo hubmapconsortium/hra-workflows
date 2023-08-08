@@ -50,7 +50,7 @@ steps:
       matrix: matrix
       organ: organ
       algorithm: algorithm
-    out: [annotations, annotated_matrix]
+    out: [annotations, annotated_matrix, report]
   
   extract:
     run: ../containers/extract-summary/pipeline.cwl
@@ -64,7 +64,7 @@ steps:
   collect:
     run: ./collect-files.cwl
     in:
-      files: [annotate/annotations, annotate/annotated_matrix, extract/summary]
+      files: [annotate/annotations, annotate/annotated_matrix, annotate/report, extract/summary]
       outputDirectory:
         source: algorithm
         valueFrom: $(getDirectoryName(self))

@@ -39,6 +39,13 @@ outputs:
       - celltypist/annotated_matrix
       - popv/annotated_matrix
     pickValue: first_non_null
+  report:
+    type: File
+    outputSource:
+      - azimuth/report
+      - celltypist/report
+      - popv/report
+    pickValue: first_non_null
 
 steps:
   azimuth:
@@ -50,7 +57,7 @@ steps:
       options:
         source: algorithm
         valueFrom: $(inputs.options.azimuth || null)
-    out: [annotations, annotated_matrix]
+    out: [annotations, annotated_matrix, report]
   
   celltypist:
     run: ../containers/celltypist/pipeline.cwl
@@ -61,7 +68,7 @@ steps:
       options:
         source: algorithm
         valueFrom: $(inputs.options.celltypist || null)
-    out: [annotations, annotated_matrix]
+    out: [annotations, annotated_matrix, report]
 
   popv:
     run: ../containers/popv/pipeline.cwl
@@ -72,4 +79,4 @@ steps:
       options:
         source: algorithm
         valueFrom: $(inputs.options.popv || null)
-    out: [annotations, annotated_matrix]
+    out: [annotations, annotated_matrix, report]
