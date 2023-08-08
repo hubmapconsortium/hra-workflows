@@ -12,11 +12,21 @@ fields:
     doc: Cell label column. Used for grouping if cellIdColumn is not provided.
     inputBinding:
       prefix: --cell-label-column
+  geneLabelColumn:
+    type: string
+    doc: Gene label column. Used for grouping if geneIdColumn is not provided.
+    inputBinding:
+      prefix: --gene-label-column
   cellIdColumn:
     type: string?
     doc: Optional cell id column. Groups by label if not provided.
     inputBinding:
       prefix: --cell-id-column
+  geneIdColumn:
+    type: string?
+    doc: Optional gene id column. Groups by label if not provided.
+    inputBinding:
+      prefix: --gene-id-column
   cellSource:
     type: string?
     doc: Cell source. Must be an IRI.

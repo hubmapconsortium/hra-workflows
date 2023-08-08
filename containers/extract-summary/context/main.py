@@ -10,6 +10,8 @@ CellSummaryRow = t.TypedDict(
         "@type": t.Literal["CellSummaryRow"],
         "cell_id": str,
         "cell_label": str,
+        "gene_id": str,
+        "gene_label": str,
         "count": int,
         "percentage": float,
     },
@@ -29,11 +31,15 @@ _NON_WORDS_REGEX = re.compile("\W+")
 _NON_ALHPA_NUM_HYPHEN_REGEX = re.compile("[^a-zA-Z0-9-]")
 
 
-def _CellSummaryRow(id: str, label: str) -> CellSummaryRow:
+def _CellSummaryRow(
+    cell_id: str, cell_label: str, gene_id: str, gene_label: str
+) -> CellSummaryRow:
     return {
         "@type": "CellSummaryRow",
-        "cell_id": id,
-        "cell_label": label,
+        "cell_id": cell_id,
+        "cell_label": cell_label,
+        "gene_id": gene_id,
+        "gene_label": gene_label,
         "count": 0,
         "percentage": 0,
     }
@@ -54,9 +60,8 @@ def _CellSummary(
     return result
 
 
-def _check_column(reader: csv.DictReader, column: t.Optional[str]):
-    if column is not None and column not in reader.fieldnames:
-        raise ValueError(f"{column} is not a column in the csv file")
+def _is_valid_column(reader: csv.DictReader, column: t.Optional[str]) -> bool:
+    return column is None or column in reader.fieldnames
 
 
 def normalize_id(id: str) -> str:
@@ -68,20 +73,32 @@ def normalize_id(id: str) -> str:
 
 
 def compute_summary_rows(
-    items: t.Iterator[t.Dict[str, str]], id_column: t.Optional[str], label_column: str
+    items: t.Iterator[t.Dict[str, str]],
+    cell_id_column: t.Optional[str],
+    cell_label_column: str,
+    gene_id_column: t.Optional[str],
+    gene_label_column: str,
 ) -> t.List[CellSummaryRow]:
-    rowsById: t.Dict[str, CellSummaryRow] = {}
-    id_transform = lambda val: val
+    rowsById: t.Dict[t.Tuple[str, str], CellSummaryRow] = {}
+    cell_id_transform = lambda val: val
     total = 0
 
-    if id_column is None:
-        id_column = label_column
-        id_transform = normalize_id
+    if cell_id_column is None:
+        cell_id_column = cell_label_column
+        cell_id_transform = normalize_id
+
+    if gene_id_column is None:
+        gene_id_column = gene_label_column
 
     for item in items:
-        id = item[id_column]
+        id = (item[cell_id_column], item[gene_id_column])
         if id not in rowsById:
-            rowsById[id] = _CellSummaryRow(id_transform(id), item[label_column])
+            rowsById[id] = _CellSummaryRow(
+                cell_id_transform(item[cell_id_column]),
+                item[cell_label_column],
+                item[gene_id_column],
+                item[gene_label_column],
+            )
         rowsById[id]["count"] += 1
         total += 1
 
@@ -94,13 +111,22 @@ def compute_summary_rows(
 def main(args: argparse.Namespace):
     context: t.Dict = json.load(args.jsonld_context)
     reader = csv.DictReader(args.input)
-    id_column = args.cell_id_column
-    label_column = args.cell_label_column
+    cell_id_column = args.cell_id_column
+    cell_label_column = args.cell_label_column
+    gene_id_column = args.gene_id_column
+    gene_label_column = args.gene_label_column
 
-    _check_column(reader, id_column)
-    _check_column(reader, label_column)
+    rows = []
+    if (
+        _is_valid_column(reader, cell_id_column)
+        and _is_valid_column(reader, cell_label_column)
+        and _is_valid_column(reader, gene_id_column)
+        and _is_valid_column(reader, gene_label_column)
+    ):
+        rows = compute_summary_rows(
+            reader, cell_id_column, cell_label_column, gene_id_column, gene_label_column
+        )
 
-    rows = compute_summary_rows(reader, id_column, label_column)
     summary = _CellSummary(args.annotation_method, args.cell_source, rows)
     context.setdefault("@graph", []).append(summary)
     json.dump(context, args.output, indent=2)
@@ -122,7 +148,15 @@ def _get_arg_parser():
         help="Cell label column. Used for grouping if --cell-id-column is not provided.",
     )
     parser.add_argument(
+        "--gene-label-column",
+        required=True,
+        help="Gene label column. Used for grouping if --gene-id-column is not provided.",
+    )
+    parser.add_argument(
         "--cell-id-column", help="Optional id column. Groups by label if not provided."
+    )
+    parser.add_argument(
+        "--gene-id-column", help="Optional id column. Groups by label if not provided."
     )
     parser.add_argument("--cell-source", help="Cell source. Must be an IRI.")
     parser.add_argument(
