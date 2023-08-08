@@ -36,7 +36,7 @@ class AlgorithmReport:
 
     def set_failure(self, cause: t.Any):
         if isinstance(cause, BaseException):
-            cause = traceback.format_exception(type(cause), cause, cause.__traceback__).join('')
+            cause = ''.join(traceback.format_exception(type(cause), cause, cause.__traceback__))
 
         self.status = Status.FAILURE
         self.failure_cause = cause
