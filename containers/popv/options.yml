@@ -7,6 +7,11 @@ fields:
     label: Reference data set in h5ad format
     inputBinding:
       prefix: --reference-data
+  predictionMode:
+    type: string?
+    label: Popv prediction mode (fast, inference, or retrain)
+    inputBinding:
+      prefix: --prediction-mode
   cellOntologyDirectory:
     type: string?
     inputBinding:
@@ -19,6 +24,10 @@ fields:
     type: string?
     inputBinding:
       prefix: --query-batch-key
+  queryLayersKey:
+    type: string?
+    inputBinding:
+      prefix: --query-layers-key
   referenceLabelsKey:
     type: string?
     inputBinding:
@@ -35,7 +44,3 @@ fields:
     type: int?
     inputBinding:
       prefix: --samples-per-label
-  sampleSize:
-    type: int?
-    inputBinding:
-      prefix: --sample-size

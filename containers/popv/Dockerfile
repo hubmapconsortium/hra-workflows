@@ -1,3 +1,4 @@
+FROM hra-workflows/shared:main as shared
 FROM tensorflow/tensorflow:2.11.1
 
 RUN apt-get -y update && apt-get -y install python3-dev g++ git wget
@@ -12,6 +13,7 @@ RUN ./download-ontology.sh
 COPY context/requirements-freeze.txt .
 RUN pip install -r requirements-freeze.txt
 
+COPY --from=shared /shared/ ./shared/
 COPY context/* .
 
 ENTRYPOINT ["python", "/main.py"]
