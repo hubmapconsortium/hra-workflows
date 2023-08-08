@@ -31,3 +31,7 @@ outputs:
     type: File
     outputBinding:
       glob: annotated_matrix.h5ad
+  report:
+    type: File
+    outputBinding:
+      glob: report.json
