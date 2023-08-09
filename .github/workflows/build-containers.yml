@@ -61,7 +61,9 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.container }}
 
       - name: Load shared image
-        run: docker load --input /tmp/shared.tar
+        run: |
+          docker load --input /tmp/shared.tar
+          docker image ls -a
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
