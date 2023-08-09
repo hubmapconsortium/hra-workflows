@@ -2,7 +2,7 @@ name: Build Containers
 
 on:
   push:
-    branches: ['shared-docker-image']
+    branches: ['main']
 
 env:
   REGISTRY: ghcr.io
