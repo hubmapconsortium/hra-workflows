@@ -35,9 +35,6 @@ class AlgorithmReport:
         return self
 
     def set_failure(self, cause: t.Any):
-        if isinstance(cause, BaseException):
-            cause = ''.join(traceback.format_exception(type(cause), cause, cause.__traceback__))
-
         self.status = Status.FAILURE
         self.failure_cause = cause
         return self
@@ -58,11 +55,19 @@ class AlgorithmReport:
         obs.to_csv(self.annotations)
 
     def save_report(self):
-        data = {"status": self.status.value}
+        result = {"status": self.status.value}
         if not self.is_success():
-            stream = io.StringIO()
-            pprint.pprint(self.failure_cause, stream=stream)
-            data["cause"] = stream.getvalue()
+            self.format_cause(result)
 
         with open(self.report, 'w') as file:
-            json.dump(data, file, indent=4)
+            json.dump(result, file, indent=4)
+
+    def format_cause(self, result: dict):
+        cause = self.failure_cause
+        if isinstance(cause, Exception):
+            result["cause"] = repr(cause)
+            result["traceback"] = traceback.format_tb(cause.__traceback__)
+        else:
+            stream = io.StringIO()
+            pprint.pprint(cause, stream=stream)
+            result["cause"] = stream.getvalue()
