@@ -9,7 +9,7 @@ def add_genes(
 ) -> anndata.AnnData:
     assert matrix.X is not None  # Makes type checker happy on the next line :)
     indices = matrix.X.argmax(axis=1)
-    genes = matrix.var[gene_column][indices]
+    genes = matrix.var[gene_column][indices.flat]
     matrix.obs[gene_output_column] = genes.values
     return matrix
 
