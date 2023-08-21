@@ -15,7 +15,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        container: [azimuth, celltypist, extract-summary, popv]
+        container: [azimuth, celltypist, extract-summary, popv, preprocess]
     
     steps:
       - name: Checkout repository
