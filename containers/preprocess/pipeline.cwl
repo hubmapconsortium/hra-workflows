@@ -21,4 +21,4 @@ outputs:
   preprocessed_matrix:
     type: File
     outputBinding:
-      glob: annotated_matrix.h5ad
+      glob: preprocessed_matrix.h5ad
