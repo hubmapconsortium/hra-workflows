@@ -6,6 +6,6 @@ RUN pip install -r requirements-freeze.txt
 ENV CELLTYPIST_FOLDER="/models"
 RUN python -c "import celltypist; celltypist.models.download_models()"
 
-COPY context/* .
+COPY context/ .
 
 CMD ["python", "/main.py"]
