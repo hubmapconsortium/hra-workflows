@@ -8,6 +8,7 @@ requirements:
   SubworkflowFeatureRequirement: {}
   SchemaDefRequirement:
     types:
+      - $import: ./containers/preprocess/options.yml
       - $import: ./containers/azimuth/options.yml
       - $import: ./containers/celltypist/options.yml
       - $import: ./containers/popv/options.yml
@@ -16,6 +17,7 @@ requirements:
 inputs:
   matrix: File
   organ: string
+  preprocessing: ./containers/preprocess/options.yml#options
   algorithms:
     type:
       type: array
@@ -34,11 +36,17 @@ outputs:
     outputSource: runEach/directory
 
 steps:
+  preprocess:
+    run: ./containers/preprocess/pipeline.cwl
+    in:
+      matrix: matrix
+      options: preprocessing
+    out: [preprocessed_matrix]
   runEach:
     run: ./steps/run-one.cwl
     scatter: algorithm
     in:
-      matrix: matrix
+      matrix: preprocess/preprocessed_matrix
       organ: organ
       algorithm: algorithms
     out: [directory]
