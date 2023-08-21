@@ -9,6 +9,8 @@ requirements:
     types:
       - $import: ./options.yml
 
+baseCommand: python /main.py
+
 inputs:
   annotations:
     type: File
