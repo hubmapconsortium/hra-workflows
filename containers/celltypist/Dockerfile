@@ -8,4 +8,4 @@ RUN python -c "import celltypist; celltypist.models.download_models()"
 
 COPY context/* .
 
-ENTRYPOINT ["python", "/main.py"]
+CMD ["python", "/main.py"]

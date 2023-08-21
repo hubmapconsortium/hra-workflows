@@ -5,4 +5,4 @@ RUN pip install -r requirements-freeze.txt
 
 COPY context/* .
 
-ENTRYPOINT ["python3", "/main.py"]
+CMD ["python3", "/main.py"]

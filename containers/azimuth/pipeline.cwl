@@ -9,7 +9,9 @@ requirements:
     types:
       - $import: ./options.yml
 
-baseCommand: python3 /main.py
+baseCommand: python3
+arguments:
+  - /main.py
 
 inputs:
   matrix:

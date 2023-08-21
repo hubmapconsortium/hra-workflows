@@ -14,4 +14,4 @@ RUN pip install -r requirements-freeze.txt
 
 COPY context/* .
 
-ENTRYPOINT ["python", "/main.py"]
+CMD ["python", "/main.py"]
