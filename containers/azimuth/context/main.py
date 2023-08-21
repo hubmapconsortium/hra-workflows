@@ -1,15 +1,15 @@
 import subprocess
 from pathlib import Path
 
+import write_metadata  # type: ignore From azimuth-annotate docker image
 
-# From azimuth-annotate docker image
-import write_metadata
-
-# From shared docker image
-from shared.algorithm import Algorithm, OrganLookup, add_common_arguments
+from src.algorithm import Algorithm, OrganLookup, add_common_arguments
 
 
 class AzimuthOrganLookup(OrganLookup[str]):
+    def __init__(self, mapping_file: Path):
+        super().__init__(mapping_file)
+
     def get_builtin_options(self):
         references = ["RK", "LK", "RL", "LL", "HT"]
         return zip(references, references)

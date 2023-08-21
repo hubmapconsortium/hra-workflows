@@ -1,9 +1,9 @@
-import traceback
 import dataclasses
 import enum
 import io
 import json
 import pprint
+import traceback
 import typing as t
 from pathlib import Path
 
@@ -59,7 +59,7 @@ class AlgorithmReport:
         if not self.is_success():
             self.format_cause(result)
 
-        with open(self.report, 'w') as file:
+        with open(self.report, "w") as file:
             json.dump(result, file, indent=4)
 
     def format_cause(self, result: dict):

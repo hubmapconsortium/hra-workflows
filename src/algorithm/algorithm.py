@@ -8,11 +8,11 @@ from .organ import OrganLookup
 from .report import AlgorithmReport
 
 Organ = t.TypeVar("Organ")
-Options = t.TypeVar("Options", bound=dict)
+Options = t.TypeVar("Options")
 
 
 class Algorithm(t.Generic[Organ, Options], abc.ABC):
-    def __init__(self, organ_lookup: t.Callable[[Path], OrganLookup]):
+    def __init__(self, organ_lookup: t.Callable[[Path], OrganLookup[Organ]]):
         self.organ_lookup = organ_lookup
 
     def run(
@@ -30,7 +30,7 @@ class Algorithm(t.Generic[Organ, Options], abc.ABC):
         )
         try:
             lookup = self.organ_lookup(organ_mapping)
-            result = self.do_run(matrix, lookup.get(organ), options)
+            result = self.do_run(matrix, lookup.get(organ), t.cast(Options, options))
             report.set_success(result)
         except Exception as error:
             report.set_failure(error)

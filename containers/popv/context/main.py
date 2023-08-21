@@ -2,16 +2,15 @@ import os
 import typing as t
 from pathlib import Path
 
-import numpy as np
-import popv
+import numpy
 import scanpy
 
-# From shared docker image
-from shared.algorithm import Algorithm, OrganLookup, add_common_arguments
+import popv
+from src.algorithm import Algorithm, OrganLookup, add_common_arguments
 
 
 class PopvOptions(t.TypedDict):
-    reference_data: Path
+    reference_data: scanpy.AnnData
     prediction_mode: str
     cell_ontology_dir: str
     query_labels_key: t.Optional[str]
@@ -89,8 +88,8 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         ref_labels_key = options["ref_labels_key"]
         n_samples_per_label = options["samples_per_label"]
         if ref_labels_key in reference_data.obs.columns:
-            n = np.min(reference_data.obs.groupby(ref_labels_key).size())
-            n_samples_per_label = max(n_samples_per_label, n)
+            n = numpy.min(reference_data.obs.groupby(ref_labels_key).size())
+            n_samples_per_label = numpy.max((n_samples_per_label, t.cast(int, n)))
         return n_samples_per_label
 
 

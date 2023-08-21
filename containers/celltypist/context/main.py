@@ -1,14 +1,16 @@
 import logging
 from pathlib import Path
 
-import celltypist
 import scanpy
 
-# From shared docker image
-from shared.algorithm import Algorithm, OrganLookup, add_common_arguments
+import celltypist
+from src.algorithm import Algorithm, OrganLookup, add_common_arguments
 
 
 class CelltypistOrganLookup(OrganLookup[celltypist.Model]):
+    def __init__(self, mapping_file: Path):
+        super().__init__(mapping_file)
+
     def get_builtin_options(self):
         models = celltypist.models.get_all_models()
         return map(lambda model: (model, self.from_raw(model)), models)
