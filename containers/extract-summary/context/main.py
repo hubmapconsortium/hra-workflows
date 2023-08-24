@@ -81,6 +81,7 @@ def compute_summary_rows(
 ) -> t.List[CellSummaryRow]:
     rowsById: t.Dict[t.Tuple[str, str], CellSummaryRow] = {}
     cell_id_transform = lambda val: val
+    gene_id_transform = lambda val: val
     total = 0
 
     if cell_id_column is None:
@@ -89,6 +90,7 @@ def compute_summary_rows(
 
     if gene_id_column is None:
         gene_id_column = gene_label_column
+        gene_id_transform = normalize_id
 
     for item in items:
         id = (item[cell_id_column], item[gene_id_column])
@@ -96,7 +98,7 @@ def compute_summary_rows(
             rowsById[id] = _CellSummaryRow(
                 cell_id_transform(item[cell_id_column]),
                 item[cell_label_column],
-                item[gene_id_column],
+                gene_id_transform(item[gene_id_column]),
                 item[gene_label_column],
             )
         rowsById[id]["count"] += 1
