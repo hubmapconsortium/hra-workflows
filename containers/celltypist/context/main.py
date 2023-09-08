@@ -1,10 +1,17 @@
+import csv
 import logging
+import typing as t
 from pathlib import Path
 
+import celltypist
+import pandas
 import scanpy
 
-import celltypist
 from src.algorithm import Algorithm, OrganLookup, add_common_arguments
+
+
+class CelltypistOptions(t.TypedDict):
+    ensemble_lookup: Path
 
 
 class CelltypistOrganLookup(OrganLookup[celltypist.Model]):
@@ -19,14 +26,17 @@ class CelltypistOrganLookup(OrganLookup[celltypist.Model]):
         return celltypist.models.Model.load(id)
 
 
-class CelltypistAlgorithm(Algorithm[celltypist.Model, dict]):
+class CelltypistAlgorithm(Algorithm[celltypist.Model, CelltypistOptions]):
     def __init__(self):
         super().__init__(CelltypistOrganLookup)
 
-    def do_run(self, matrix: Path, organ: celltypist.Model, options: dict):
+    def do_run(self, matrix: Path, organ: celltypist.Model, options: CelltypistOptions):
         data = scanpy.read_h5ad(matrix)
         data = self.normalize(data)
-        return celltypist.annotate(data, organ, majority_voting=True).to_adata()
+        data, var_names = self.normalize_var_names(data, options)
+        data = celltypist.annotate(data, organ, majority_voting=True).to_adata()
+        data.var_names = t.cast(t.Any, var_names)
+        return data
 
     def normalize(self, data: scanpy.AnnData) -> scanpy.AnnData:
         primary_column = "feature_name"
@@ -45,9 +55,42 @@ class CelltypistAlgorithm(Algorithm[celltypist.Model, dict]):
         data.var_names_make_unique()
         return data
 
+    def normalize_var_names(
+        self, data: scanpy.AnnData, options: CelltypistOptions
+    ) -> t.Tuple[scanpy.AnnData, pandas.Index]:
+        lookup = self.load_ensemble_lookup(options)
+        names = data.var_names
+
+        def getNewName(name: str):
+            (key,) = name.split(".", 1)
+            return lookup.get(key, name)
+
+        data.var_names = t.cast(t.Any, names.map(getNewName))
+        return data, names
+
+    def load_ensemble_lookup(self, options: CelltypistOptions):
+        with open(options["ensemble_lookup"]) as file:
+            reader = csv.DictReader(file)
+            lookup: t.Dict[str, str] = {}
+            for row in reader:
+                lookup[row["ensemble"]] = row["gene_name"]
+        return lookup
+
+
+def _get_arg_parser():
+    parser = add_common_arguments()
+    parser.add_argument(
+        "--ensemble-lookup",
+        type=Path,
+        default="/ensemble-lookup.csv",
+        help="Ensemble id to gene name csv",
+    )
+
+    return parser
+
 
 if __name__ == "__main__":
-    parser = add_common_arguments()
+    parser = _get_arg_parser()
     args = parser.parse_args()
     algorithm = CelltypistAlgorithm()
     result = algorithm.run(**args.__dict__)
