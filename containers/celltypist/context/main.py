@@ -62,7 +62,7 @@ class CelltypistAlgorithm(Algorithm[celltypist.Model, CelltypistOptions]):
         names = data.var_names
 
         def getNewName(name: str):
-            (key,) = name.split(".", 1)
+            key = name.split(".", 1)[0]
             return lookup.get(key, name)
 
         data.var_names = t.cast(t.Any, names.map(getNewName))
