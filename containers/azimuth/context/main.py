@@ -1,6 +1,8 @@
 import subprocess
 from pathlib import Path
 
+import anndata
+import pandas
 import write_metadata  # type: ignore From azimuth-annotate docker image
 
 from src.algorithm import Algorithm, OrganLookup, add_common_arguments
@@ -20,6 +22,34 @@ class AzimuthAlgorithm(Algorithm[str, dict]):
         super().__init__(AzimuthOrganLookup)
 
     def do_run(self, matrix: Path, organ: str, options: dict):
+        data = anndata.read_h5ad(matrix)
+
+        # Azimuth chokes when trying to load matrices that has
+        # obs columns of dtype 'object'. As a workaround we create a
+        # clean matrix without obs columns on which azimuth is run
+        # after which the annotations are copied back to the original matrix
+        clean_matrix_path = Path("clean_matrix.h5ad")
+        clean_matrix = self.create_clean_matrix(data)
+        clean_matrix.write_h5ad(clean_matrix_path)
+
+        annotated_matrix_path = self.run_azimuth_scripts(clean_matrix_path, organ)
+        annotated_matrix = anndata.read_h5ad(annotated_matrix_path)
+        self.copy_annotations(data, annotated_matrix)
+
+        return data
+
+    def create_clean_matrix(self, matrix: anndata.AnnData):
+        clean_obs = pandas.DataFrame(index=matrix.obs.index)
+        clean_matrix = matrix.copy()
+        clean_matrix.obs = clean_obs
+        return clean_matrix
+
+    def copy_annotations(
+        self, matrix: anndata.AnnData, annotated_matrix: anndata.AnnData
+    ):
+        matrix.obs = matrix.obs.join(annotated_matrix.obs)
+
+    def run_azimuth_scripts(self, matrix_path: Path, organ: str):
         script_outputs = [
             "./secondary_analysis.h5ad",
             "./version_metadata.json",
@@ -29,13 +59,13 @@ class AzimuthAlgorithm(Algorithm[str, dict]):
             "Rscript",
             "/azimuth_analysis.R",
             organ,
-            matrix,
-            matrix,
+            matrix_path,
+            matrix_path,
         ]
 
         subprocess.run(script_command, capture_output=True, check=True)
         write_metadata.main(*script_outputs)
-        return Path(script_outputs[0])
+        return script_outputs[0]
 
 
 if __name__ == "__main__":
