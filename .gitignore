@@ -168,3 +168,6 @@ containers/*/context/src
 # Temp directories
 tmp/
 temp/
+
+# DS Store 
+.DS_Store

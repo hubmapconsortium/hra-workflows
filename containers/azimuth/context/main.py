@@ -3,7 +3,6 @@ from pathlib import Path
 
 import anndata
 import pandas
-import write_metadata  # type: ignore From azimuth-annotate docker image
 
 from src.algorithm import Algorithm, OrganLookup, add_common_arguments
 
@@ -13,7 +12,7 @@ class AzimuthOrganLookup(OrganLookup[str]):
         super().__init__(mapping_file)
 
     def get_builtin_options(self):
-        references = ["RK", "LK", "RL", "LL", "HT"]
+        references = ["adiposeref" ,"bonemarrowref" ,"fetusref" ,"heartref"  ,"humancortexref"   ,"kidneyref"  ,"lungref"   ,"mousecortexref"   ,"pancreasref"   ,"pbmcref"  ,"tonsilref"]
         return zip(references, references)
 
 
@@ -22,6 +21,7 @@ class AzimuthAlgorithm(Algorithm[str, dict]):
         super().__init__(AzimuthOrganLookup)
 
     def do_run(self, matrix: Path, organ: str, options: dict):
+        print('foo')
         data = anndata.read_h5ad(matrix)
 
         # Azimuth chokes when trying to load matrices that has
@@ -31,12 +31,11 @@ class AzimuthAlgorithm(Algorithm[str, dict]):
         clean_matrix_path = Path("clean_matrix.h5ad")
         clean_matrix = self.create_clean_matrix(data)
         clean_matrix.write_h5ad(clean_matrix_path)
-
         annotated_matrix_path = self.run_azimuth_scripts(clean_matrix_path, organ)
         annotated_matrix = anndata.read_h5ad(annotated_matrix_path)
         self.copy_annotations(data, annotated_matrix)
 
-        return data
+        return annotated_matrix
 
     def create_clean_matrix(self, matrix: anndata.AnnData):
         clean_obs = pandas.DataFrame(index=matrix.obs.index)
@@ -51,20 +50,17 @@ class AzimuthAlgorithm(Algorithm[str, dict]):
 
     def run_azimuth_scripts(self, matrix_path: Path, organ: str):
         script_outputs = [
-            "./secondary_analysis.h5ad",
-            "./version_metadata.json",
-            "./annotations.csv",
+            "./result.h5ad"
+            # "./version_metadata.json",
+            # "./annotations.csv",
         ]
         script_command = [
             "Rscript",
-            "/azimuth_analysis.R",
+            "run_azimuth.R",
             organ,
-            matrix_path,
-            matrix_path,
+            matrix_path
         ]
-
-        subprocess.run(script_command, capture_output=True, check=True)
-        write_metadata.main(*script_outputs)
+        subprocess.run(script_command, capture_output=False, check=True)
         return script_outputs[0]
 
 
