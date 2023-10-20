@@ -1,17 +1,18 @@
 #!/bin/bash
+set -e
 
-# Defined by user: MODELS_DIR and ZENODO_MODELS_ID
-MODELS_TMP_DIR=$MODELS_DIR/tmp
+MODELS_ID=${1:?"A zenodo models id must be provided to download!"}
+MODELS_DIR=${2:-"./popv/models"}
 
-mkdir -p $MODELS_DIR $MODELS_TMP_DIR
+mkdir -p $MODELS_DIR
+zenodo_get $MODELS_ID -o $MODELS_DIR
 
-pip install 'zenodo_get@git+https://github.com/dvolgyes/zenodo_get'
-zenodo_get $ZENODO_MODELS_ID -o $MODELS_TMP_DIR
+for ARCHIVE in $MODELS_DIR/*.tar.gz; do
+  MODEL=$(basename -s .tar.gz $ARCHIVE)
+  DIR="$MODELS_DIR/$MODEL"
 
-for archive in $MODELS_TMP_DIR/*.tar.gz; do
-  NAME=`basename $archive .tar.gz`
-  mkdir -p $MODELS_DIR/${NAME}
-  tar zx -C $MODELS_DIR/${NAME} -f $archive
+  if [[ ! -d $DIR || -z $(ls -A $DIR) ]]; then
+    mkdir -p $DIR
+    tar zx -C $DIR -f $ARCHIVE
+  fi
 done
-
-rm -rf $MODELS_TMP_DIR

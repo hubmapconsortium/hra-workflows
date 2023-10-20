@@ -2,11 +2,16 @@ type: record
 name: options
 label: Popv specific options
 fields:
-  referenceData:
-    type: File
-    label: Reference data set in h5ad format
+  referenceDataDir:
+    type: Directory
+    label: Directory with reference data files in the h5ad format
     inputBinding:
-      prefix: --reference-data
+      prefix: --reference-data-dir
+  modelsDir:
+    type: Directory
+    label: Directory with models directories
+    inputBinding:
+      prefix: --models-dir
   predictionMode:
     type: string?
     label: Popv prediction mode (fast, inference, or retrain)
