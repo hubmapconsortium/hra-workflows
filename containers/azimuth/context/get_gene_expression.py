@@ -32,6 +32,6 @@ def get_gene_expr(ct,genes):
         output.append({'gene_label':gene,'mean_gene_expr_value':filtered_adata.X[cell_indices,filtered_adata.var.index.get_loc(gene)].mean()})
     return output
 
-ct_gene_expr['gene_expr'] = ct_gene_expr['gene_expr'].apply(lambda row: get_gene_expr(row['ct'], row['gene_expr']), axis=1)
+ct_gene_expr['gene_expr'] = ct_gene_expr.apply(lambda row: get_gene_expr(row['ct'], row['gene_expr']), axis=1)
 
 ct_gene_expr.to_csv('gene_expr.csv')
