@@ -5,13 +5,12 @@ library(SeuratDisk)
 
 args <- commandArgs(trailingOnly = TRUE)
 
-organ <- args[1]
-matrix_path <- args[2]
-# dest_matrix_path = gsub("data","annotated-data",matrix_path)
+matrix_path <- args[1]
+reference <- args[2]
 
-# data <- LoadFileInput(path=matrix_path)
-print('start')
-output_data <- RunAzimuth(matrix_path, reference = organ)
-print('done')
+# Annotate
+output_data <- RunAzimuth(matrix_path, reference=reference)
+
+# Save and convert to h5ad
 SaveH5Seurat(output_data, 'result.h5seurat')
 Convert('result.h5seurat', dest='h5ad')

@@ -1,4 +1,9 @@
 type: record
 name: options
 label: Azimuth specific options
-fields: {}
+fields:
+  referenceDataDir:
+    type: Directory
+    label: Directory with reference data directories
+    inputBinding:
+      prefix: --reference-data-dir
