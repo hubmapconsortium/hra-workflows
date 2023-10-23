@@ -4,6 +4,7 @@ cwlVersion: v1.2
 
 requirements:
   InlineJavascriptRequirement: {}
+  MultipleInputFeatureRequirement: {}
   StepInputExpressionRequirement: {}
   SubworkflowFeatureRequirement: {}
 
