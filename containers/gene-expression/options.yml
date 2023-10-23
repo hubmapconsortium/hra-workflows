@@ -1,0 +1,14 @@
+type: record
+name: options
+label: Gene expression options
+fields:
+  annotationColumn:
+    type: string
+    label: Annotation column
+    inputBinding:
+      prefix: --annotation-column
+  geneExprColumn:
+    type: string
+    label: Gene expression column
+    inputBinding:
+      prefix: --gene-expr-column
