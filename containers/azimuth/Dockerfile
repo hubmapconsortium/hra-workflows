@@ -1,4 +1,6 @@
-FROM hubmap/azimuth-annotate:1.3
+FROM satijalab/azimuth:0.4.6
+
+RUN R --no-echo -e "install.packages('rjson', repo='https://cloud.r-project.org')"
 
 COPY context/requirements-freeze.txt .
 RUN pip install -r requirements-freeze.txt
