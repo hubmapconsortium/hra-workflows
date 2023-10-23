@@ -1,6 +1,4 @@
-argparse
 anndata
 numpy
 scanpy
 pandas
-pathlib
