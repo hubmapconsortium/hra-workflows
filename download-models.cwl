@@ -16,22 +16,23 @@ inputs:
 
 outputs:
   data:
-    type: Directory[]
-    outputSource: [downloadAzimuth/data, downloadPopv/data]
+    type: Directory
+    outputSource: collectFiles/directory
 
 steps:
   downloadAzimuth:
     run: ./containers/azimuth/download-data.cwl
-    in:
-      outputDirectory:
-        source: outputDirectory
-        valueFrom: $(self + '/azimuth')
+    in: []
     out: [data]
 
   downloadPopv:
     run: ./containers/popv/download-data.cwl
-    in:
-      outputDirectory:
-        source: outputDirectory
-        valueFrom: $(self + '/popv')
+    in: []
     out: [data]
+
+  collectFiles:
+    run: ./steps/collect-files.cwl
+    in:
+      files: [downloadAzimuth/data, downloadPopv/data]
+      outputDirectory: outputDirectory
+    out: [directory]

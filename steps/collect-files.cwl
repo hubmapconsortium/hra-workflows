@@ -7,7 +7,12 @@ requirements:
   MultipleInputFeatureRequirement: {}
 
 inputs:
-  files: File[]
+  files:
+    type:
+      type: array
+      items:
+        - File
+        - Directory
   outputDirectory: string
 outputs:
   directory: Directory
