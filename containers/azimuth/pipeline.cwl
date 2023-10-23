@@ -5,6 +5,9 @@ cwlVersion: v1.0
 requirements:
   DockerRequirement:
     dockerPull: ghcr.io/hubmapconsortium/hra-workflows/azimuth:main
+  EnvVarRequirement:
+    envDef:
+      R_LIBS: $(inputs.options.referenceDataDir)
   SchemaDefRequirement:
     types:
       - $import: ./options.yml
