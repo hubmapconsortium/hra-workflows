@@ -1,5 +1,7 @@
 FROM python:3.10
 
+RUN apt-get -y update && apt-get -y install cmake
+
 COPY context/requirements-freeze.txt .
 RUN pip install -r requirements-freeze.txt
 
