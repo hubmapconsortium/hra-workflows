@@ -22,7 +22,7 @@ CellSummary = t.TypedDict(
     {
         "@type": t.Literal["CellSummary"],
         "annotation_method": str,
-        "cell_source": t.NotRequired[str],
+        "cell_source": t.Optional[str],
         "summary": t.List[CellSummaryRow],
     },
 )
