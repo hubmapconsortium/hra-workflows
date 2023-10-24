@@ -7,7 +7,7 @@ requirements:
     dockerPull: ghcr.io/hubmapconsortium/hra-workflows/azimuth:main
   EnvVarRequirement:
     envDef:
-      R_LIBS: $(inputs.options.referenceDataDir)
+      R_LIBS: $(inputs.options.referenceDataDir.path)
   SchemaDefRequirement:
     types:
       - $import: ./options.yml
