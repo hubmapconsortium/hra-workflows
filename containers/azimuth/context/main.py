@@ -1,7 +1,7 @@
 import logging
 import subprocess
-from pathlib import Path
 import typing as t
+from pathlib import Path
 
 import anndata
 import pandas
@@ -72,19 +72,21 @@ class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
 
     def run_azimuth_scripts(self, matrix_path: Path, reference_data: Path):
         script_command = ["Rscript", "/run_azimuth.R", matrix_path, reference_data]
-        subprocess.run(script_command, capture_output=True, check=True)
+        subprocess.run(script_command, capture_output=True, check=True, text=True)
         return "./result.h5ad"
 
     def find_reference_data(self, organ: str, dir: Path):
         def is_reference_data_candidate(path: Path):
             return path.is_dir() and organ.lower() in path.name.lower()
 
-        return self._find_in_dir(
+        subdir = self._find_in_dir(
             dir,
             is_reference_data_candidate,
             f"Cannot find reference data for organ '{organ}'",
             f"Multiple reference data candidates for organ '{organ}'",
         )
+        # idx.annoy and ref.Rds is always located inside an 'azimuth' subdirectory
+        return subdir / "azimuth"
 
     def _find_in_dir(
         self, dir: Path, cond: t.Callable[[Path], bool], error_msg: str, warn_msg: str

@@ -3,6 +3,7 @@ import enum
 import io
 import json
 import pprint
+import subprocess
 import traceback
 import typing as t
 from pathlib import Path
@@ -67,6 +68,11 @@ class AlgorithmReport:
         if isinstance(cause, Exception):
             result["cause"] = repr(cause)
             result["traceback"] = traceback.format_tb(cause.__traceback__)
+            if isinstance(cause, subprocess.CalledProcessError):
+                # stdout and stderr does not show in the repr of a CalledProcessError
+                # Add them to the result here instead to give more context on errors
+                result["stdout"] = cause.stdout
+                result["stderr"] = cause.stderr
         else:
             stream = io.StringIO()
             pprint.pprint(cause, stream=stream)
