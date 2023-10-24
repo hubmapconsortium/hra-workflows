@@ -11,4 +11,19 @@ fields:
     type: File
     label: Crosswalk CSV file
     inputBinding:
-      prefix: --gene-expr-column
+      prefix: --crosswalk-table
+  crosswalkTableLabelColumn:
+    type: string
+    label: Azimuth label column in crosswalk table
+    inputBinding:
+      prefix: --crosswalk-table-label-column
+ crosswalkTableClidColumn:
+    type: string
+    label: CL ID column in crosswalk table
+    inputBinding:
+      prefix: --crosswalk-table-clid-column
+  crosswalkTableMatchColumn:
+    type: string
+    label: Match type column in crosswalk table
+    inputBinding:
+      prefix: --crosswalk-table-match-column

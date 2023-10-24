@@ -4,20 +4,53 @@ import pandas as pd
 from pathlib import Path
 
 
-def filter_crosswalk_table(crosswalk_table: pd.DataFrame) -> pd.DataFrame:
+def filter_crosswalk_table(
+    crosswalk_table: pd.DataFrame,
+    crosswalk_table_label_column: str,
+    crosswalk_table_clid_column: str,
+    crosswalk_table_match_column: str,
+) -> pd.DataFrame:
     """Filters the table to remove empty rows and keep only necessary columns"""
     crosswalk_table.dropna(inplace=True)
-    crosswalk_table[["A_L", "CL_ID", "CL_Match"]] = crosswalk_table[
-        ["A_L", "CL_ID", "CL_Match"]
-    ].astype(str)
-    return crosswalk_table[["A_L", "CL_ID", "CL_Match"]].drop_duplicates()
+    crosswalk_table[
+        [
+            crosswalk_table_label_column,
+            crosswalk_table_clid_column,
+            crosswalk_table_match_column,
+        ]
+    ] = crosswalk_table[
+        [
+            crosswalk_table_label_column,
+            crosswalk_table_clid_column,
+            crosswalk_table_match_column,
+        ]
+    ].astype(
+        str
+    )
+    return crosswalk_table[
+        [
+            crosswalk_table_label_column,
+            crosswalk_table_clid_column,
+            crosswalk_table_match_column,
+        ]
+    ].drop_duplicates()
 
 
 def crosswalk(
-    matrix: anndata.AnnData, annotation_column: str, crosswalk_table: pd.DataFrame
+    matrix: anndata.AnnData,
+    annotation_column: str,
+    crosswalk_table: pd.DataFrame,
+    crosswalk_table_label_column: str,
+    crosswalk_table_clid_column: str,
+    crosswalk_table_match_column: str,
 ) -> anndata.AnnData:
     """Gives each cell a CL ID and Match type using crosswalk table"""
-    filtered_crosswalk_table = filter_crosswalk_table(crosswalk_table)
+    filtered_crosswalk_table = filter_crosswalk_table(
+        crosswalk_table,
+        crosswalk_table_label_column,
+        crosswalk_table_clid_column,
+        crosswalk_table_match_column,
+    )
     merged_obs = matrix.obs.merge(
         filtered_crosswalk_table, left_on=annotation_column, right_on="A_L", how="left"
     ).drop("A_L", axis=1)
@@ -27,7 +60,14 @@ def crosswalk(
 
 
 def main(args: argparse.Namespace):
-    matrix = crosswalk(args.matrix, args.annotation_column, args.crosswalk_table)
+    matrix = crosswalk(
+        args.matrix,
+        args.annotation_column,
+        args.crosswalk_table,
+        args.crosswalk_table_label_column,
+        args.crosswalk_table_clid_column,
+        args.crosswalk_table_match_column,
+    )
     matrix.write_h5ad(args.output_matrix)
 
 
@@ -43,6 +83,21 @@ def _get_arg_parser() -> argparse.ArgumentParser:
         required=True,
         default="all_labels.csv",
         help="crosswalking csv file path",
+    )
+    parser.add_argument(
+        "--crosswalk-table-label-column",
+        required=True,
+        help="Column with Azimuth label in crosswalking table",
+    )
+    parser.add_argument(
+        "--crosswalk-table-clid-column",
+        required=True,
+        help="Column with CL ID in crosswalking table",
+    )
+    parser.add_argument(
+        "--crosswalk-table-match-column",
+        required=True,
+        help="Column with match type in crosswalking table",
     )
     parser.add_argument(
         "--output-matrix",
