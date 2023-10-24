@@ -11,29 +11,14 @@ def filter_crosswalk_table(
     crosswalk_table_match_column: str,
 ) -> pd.DataFrame:
     """Filters the table to remove empty rows and keep only necessary columns"""
+    COLUMNS = [
+        crosswalk_table_label_column,
+        crosswalk_table_clid_column,
+        crosswalk_table_match_column,
+    ]
     crosswalk_table.dropna(inplace=True)
-    crosswalk_table[
-        [
-            crosswalk_table_label_column,
-            crosswalk_table_clid_column,
-            crosswalk_table_match_column,
-        ]
-    ] = crosswalk_table[
-        [
-            crosswalk_table_label_column,
-            crosswalk_table_clid_column,
-            crosswalk_table_match_column,
-        ]
-    ].astype(
-        str
-    )
-    return crosswalk_table[
-        [
-            crosswalk_table_label_column,
-            crosswalk_table_clid_column,
-            crosswalk_table_match_column,
-        ]
-    ].drop_duplicates()
+    crosswalk_table[COLUMNS] = crosswalk_table[COLUMNS].astype(str)
+    return crosswalk_table[COLUMNS].drop_duplicates()
 
 
 def crosswalk(
@@ -52,8 +37,11 @@ def crosswalk(
         crosswalk_table_match_column,
     )
     merged_obs = matrix.obs.merge(
-        filtered_crosswalk_table, left_on=annotation_column, right_on="A_L", how="left"
-    ).drop("A_L", axis=1)
+        filtered_crosswalk_table,
+        left_on=annotation_column,
+        right_on=crosswalk_table_label_column,
+        how="left",
+    ).drop(crosswalk_table_label_column, axis=1)
     merged_obs.index = matrix.obs.index
     matrix.obs = merged_obs
     return matrix
