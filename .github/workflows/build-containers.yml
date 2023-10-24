@@ -19,6 +19,7 @@ jobs:
           [
             azimuth,
             celltypist,
+            crosswalking,
             extract-summary,
             gene-expression,
             popv,

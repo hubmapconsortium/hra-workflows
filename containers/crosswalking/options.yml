@@ -1,0 +1,29 @@
+type: record
+name: options
+label: crosswalking options
+fields:
+  annotationColumn:
+    type: string
+    label: Annotation column
+    inputBinding:
+      prefix: --annotation-column
+  crosswalkTable:
+    type: File
+    label: Crosswalk CSV file
+    inputBinding:
+      prefix: --crosswalk-table
+  crosswalkTableLabelColumn:
+    type: string
+    label: Azimuth label column in crosswalk table
+    inputBinding:
+      prefix: --crosswalk-table-label-column
+ crosswalkTableClidColumn:
+    type: string
+    label: CL ID column in crosswalk table
+    inputBinding:
+      prefix: --crosswalk-table-clid-column
+  crosswalkTableMatchColumn:
+    type: string
+    label: Match type column in crosswalk table
+    inputBinding:
+      prefix: --crosswalk-table-match-column
