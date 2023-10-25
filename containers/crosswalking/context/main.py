@@ -2,6 +2,7 @@ import argparse
 import anndata
 import pandas as pd
 from pathlib import Path
+import re
 
 
 def filter_crosswalk_table(
@@ -19,6 +20,14 @@ def filter_crosswalk_table(
     crosswalk_table.dropna(inplace=True)
     crosswalk_table[COLUMNS] = crosswalk_table[COLUMNS].astype(str)
     return crosswalk_table[COLUMNS].drop_duplicates()
+
+
+def generate_iri(label: str):
+    """generate IRIs for labels not found in crosswalk tables"""
+    suffix = label.lower().strip()
+    suffix = re.sub(r"/\W+/g", "-", suffix)
+    suffix = re.sub(r"[^a-z0-9-]+", "", suffix)
+    return "ASCTB-TEMP:" + suffix
 
 
 def crosswalk(
@@ -42,6 +51,15 @@ def crosswalk(
         right_on=crosswalk_table_label_column,
         how="left",
     ).drop(crosswalk_table_label_column, axis=1)
+    merged_obs.loc[
+        merged_obs[crosswalk_table_clid_column].isna(), crosswalk_table_clid_column
+    ] = merged_obs.apply(
+        lambda row: generate_iri(row[annotation_column]),
+        axis=1,
+    )
+    merged_obs.loc[
+        merged_obs[crosswalk_table_match_column].isna(), crosswalk_table_match_column
+    ] = "skos:exactMatch"
     merged_obs.index = matrix.obs.index
     matrix.obs = merged_obs
     return matrix
