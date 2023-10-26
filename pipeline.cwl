@@ -36,17 +36,17 @@ outputs:
     outputSource: runEach/directory
 
 steps:
-  preprocess:
-    run: ./containers/preprocess/pipeline.cwl
-    in:
-      matrix: matrix
-      options: preprocessing
-    out: [preprocessed_matrix]
+  # preprocess:
+  #   run: ./containers/preprocess/pipeline.cwl
+  #   in:
+  #     matrix: matrix
+  #     options: preprocessing
+  #   out: [preprocessed_matrix]
   runEach:
     run: ./steps/run-one.cwl
     scatter: algorithm
     in:
-      matrix: preprocess/preprocessed_matrix
+      matrix: matrix
       organ: organ
       algorithm: algorithms
     out: [directory]

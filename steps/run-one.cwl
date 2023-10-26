@@ -52,19 +52,19 @@ steps:
       algorithm: algorithm
     out: [annotations, annotated_matrix, report]
   
-  extract:
-    run: ../containers/extract-summary/pipeline.cwl
-    in:
-      annotations: annotate/annotations
-      options:
-        source: algorithm
-        valueFrom: $(self.extract)
-    out: [summary]
+  # extract:
+  #   run: ../containers/extract-summary/pipeline.cwl
+  #   in:
+  #     annotations: annotate/annotations
+  #     options:
+  #       source: algorithm
+  #       valueFrom: $(self.extract)
+  #   out: [summary]
 
   collect:
     run: ./collect-files.cwl
     in:
-      files: [annotate/annotations, annotate/annotated_matrix, annotate/report, extract/summary]
+      files: [annotate/annotations, annotate/annotated_matrix, annotate/report]
       outputDirectory:
         source: algorithm
         valueFrom: $(getDirectoryName(self))
