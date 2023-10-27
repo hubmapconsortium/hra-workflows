@@ -68,7 +68,7 @@ class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
     def copy_annotations(
         self, matrix: anndata.AnnData, annotated_matrix: anndata.AnnData
     ):
-        matrix.obs = matrix.obs.join(annotated_matrix.obs)
+        matrix.obs = matrix.obs.join(annotated_matrix.obs, rsuffix="_azimuth")
 
     def run_azimuth_scripts(self, matrix_path: Path, reference_data: Path):
         script_command = ["Rscript", "/run_azimuth.R", matrix_path, reference_data]
