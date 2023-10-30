@@ -49,3 +49,11 @@ fields:
     type: int?
     inputBinding:
       prefix: --samples-per-label
+  referenceVarnamesColumn:
+    type: string?
+    inputBinding:
+      prefix: --ref-varnames-column
+  dataVarnamesColumn:
+    type: string?
+    inputBinding:
+      prefix: --data-varnames-column
