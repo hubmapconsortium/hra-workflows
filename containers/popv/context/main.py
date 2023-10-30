@@ -21,8 +21,8 @@ class PopvOptions(t.TypedDict):
     ref_batch_key: str
     unknown_labels_key: str
     samples_per_label: int
-    ref_varnames_column: str
-    data_varnames_column: str
+    ref_gene_column: str
+    data_gene_column: str
 
 
 class PopvAlgorithm(Algorithm[str, PopvOptions]):
@@ -46,7 +46,6 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
     def prepare_query(
         self, data: scanpy.AnnData, organ: str, options: PopvOptions
     ) -> scanpy.AnnData:
-        print("here")
         reference_data_path = self.find_reference_data(
             options["reference_data_dir"], organ
         )
@@ -55,8 +54,8 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         filtered_data = self.filter_genes(
             data,
             reference_data,
-            options["ref_varnames_column"],
-            options["data_varnames_column"],
+            options["ref_gene_column"],
+            options["data_gene_column"],
         )
         n_samples_per_label = self.get_n_samples_per_label(reference_data, options)
 
@@ -131,13 +130,13 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
     def filter_genes(
         data: scanpy.AnnData,
         reference_data: scanpy.AnnData,
-        ref_varnames_column: str,
-        data_varnames_column: str,
+        ref_gene_column: str,
+        data_gene_column: str,
     ) -> scanpy.AnnData:
         """PoPV preprocessing fails on encountering non reference data genes. Filters data to have only reference data genes"""
-        reference_data_genes = reference_data.var[ref_varnames_column].tolist()
+        reference_data_genes = reference_data.var[ref_gene_column].unique().tolist()
         filtered_data_var = data.var[
-            data.var[data_varnames_column].isin(reference_data_genes)
+            data.var[data_gene_column].isin(reference_data_genes)
         ]
         numerical_data_var_index = data.var.index.get_indexer(
             filtered_data_var.index.tolist()
@@ -158,6 +157,9 @@ def _get_arg_parser():
         type=Path,
         required=True,
         help="Path to models directory",
+    )
+    parser.add_argument(
+        "--data-genes-column", required=True, help="Data gene names column"
     )
     parser.add_argument("--prediction-mode", default="fast", help="Prediction mode")
     parser.add_argument(
@@ -184,12 +186,9 @@ def _get_arg_parser():
         "--samples-per-label", type=int, default=500, help="Number of samples per label"
     )
     parser.add_argument(
-        "--ref-varnames-column",
+        "--ref-genes-column",
         default="feature_name",
         help="Reference data gene names column",
-    )
-    parser.add_argument(
-        "--data-varnames-column", default="hugo_symbol", help="Data gene names column"
     )
     return parser
 
