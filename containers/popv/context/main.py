@@ -5,6 +5,12 @@ from pathlib import Path
 import numpy
 import popv
 import scanpy
+import anndata
+import torch
+import pandas
+
+# import typing as t
+import csv
 
 from src.algorithm import Algorithm, OrganLookup, add_common_arguments
 
@@ -21,8 +27,8 @@ class PopvOptions(t.TypedDict):
     ref_batch_key: str
     unknown_labels_key: str
     samples_per_label: int
-    ref_gene_column: str
-    data_gene_column: str
+    data_genes_column: str
+    ensemble_lookup: Path
 
 
 class PopvAlgorithm(Algorithm[str, PopvOptions]):
@@ -51,16 +57,16 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         )
         model_path = self.find_model_dir(options["models_dir"], organ)
         reference_data = scanpy.read_h5ad(reference_data_path)
-        filtered_data = self.filter_genes(
+        data, var_names = self.normalize_var_names(data, options)
+        # data.var_names = t.cast(t.Any, var_names)
+        updated_data = self.add_model_genes(
             data,
-            reference_data,
-            options["ref_gene_column"],
-            options["data_gene_column"],
+            model_path,
+            options["data_genes_column"],
         )
         n_samples_per_label = self.get_n_samples_per_label(reference_data, options)
-
         query = popv.preprocessing.Process_Query(
-            filtered_data,
+            updated_data,
             reference_data,
             save_path_trained_models=str(model_path),
             prediction_mode=options["prediction_mode"],
@@ -127,21 +133,66 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
             warn(warn_msg)
         return candidates[0]
 
-    def filter_genes(
+    def normalize_var_names(
+        self, data: scanpy.AnnData, options: PopvOptions
+    ) -> t.Tuple[scanpy.AnnData, pandas.Index]:
+        lookup = self.load_ensemble_lookup(options)
+        names = data.var_names
+
+        def getNewName(name: str):
+            key = name.split(".", 1)[0]
+            return lookup.get(key, name)
+
+        data.var_names = t.cast(t.Any, names.map(getNewName))
+        return data, names
+
+    def load_ensemble_lookup(self, options: PopvOptions):
+        with open(options["ensemble_lookup"]) as file:
+            reader = csv.DictReader(file)
+            lookup: t.Dict[str, str] = {}
+            for row in reader:
+                lookup[row["ensemble"]] = row["gene_name"]
+        return lookup
+
+    def add_model_genes(
+        self,
         data: scanpy.AnnData,
-        reference_data: scanpy.AnnData,
-        ref_gene_column: str,
-        data_gene_column: str,
+        model_path: Path,
+        data_genes_column: str,
     ) -> scanpy.AnnData:
-        """PoPV preprocessing fails on encountering non reference data genes. Filters data to have only reference data genes"""
-        reference_data_genes = reference_data.var[ref_gene_column].unique().tolist()
-        filtered_data_var = data.var[
-            data.var[data_gene_column].isin(reference_data_genes)
-        ]
-        numerical_data_var_index = data.var.index.get_indexer(
-            filtered_data_var.index.tolist()
+        """Adds genes from model not present in input data to input data. Needed for preprocessing bug"""
+        model_genes = torch.load(
+            Path.joinpath(model_path, "scvi/model.pt"), map_location="cpu"
+        )["var_names"]
+        n_obs_data = data.X.shape[0]
+        new_genes = set(numpy.setdiff1d(model_genes, data.var_names))
+        new_data = scanpy.AnnData(
+            X=numpy.zeros((n_obs_data, len(new_genes))), var=new_genes
         )
-        return data[:, numerical_data_var_index]
+        new_data.obs_names = data.obs_names
+        new_data.var_names = new_genes
+        merged_data = anndata.concat([data, new_data], axis=1)
+        print(merged_data.shape)
+        merged_data_clean = self.combine_duplicate_columns(merged_data)
+        print(merged_data_clean.shape)
+        return merged_data
+
+    def combine_duplicate_columns(self, data: scanpy.AnnData) -> scanpy.AnnData:
+        """Combines columns with same gene name takes their mean"""
+        # INCOMPLETE
+        duplicated_var_names = data.var_names[
+            data.var_names.duplicated(keep="first")
+        ].unique()
+        averaged_data = []
+        for duplicated_var_name in duplicated_var_names:
+            averaged_data.append(data[:, duplicated_var_name].X.mean(axis=1))
+        new_data = anndata.AnnData(
+            X=averaged_data, obs=data.obs, var=duplicated_var_names
+        )
+        data = anndata.concat(
+            [data[:, ~data.var_names.isin(duplicated_var_names)], new_data]
+        )
+        return data
 
 
 def _get_arg_parser():
@@ -186,9 +237,10 @@ def _get_arg_parser():
         "--samples-per-label", type=int, default=500, help="Number of samples per label"
     )
     parser.add_argument(
-        "--ref-genes-column",
-        default="feature_name",
-        help="Reference data gene names column",
+        "--ensemble-lookup",
+        type=Path,
+        default="/ensemble-lookup.csv",
+        help="Ensemble id to gene name csv",
     )
     return parser
 
