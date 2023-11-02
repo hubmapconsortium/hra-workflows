@@ -72,7 +72,6 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         )
         updated_data.var_names_make_unique()  # for resolving duplicate index bug
         updated_data.X = numpy.rint(updated_data.X)  # for resolving non integer bug
-        updated_data.write_h5ad("lookat_2.h5ad")
         n_samples_per_label = self.get_n_samples_per_label(reference_data, options)
         query = popv.preprocessing.Process_Query(
             updated_data,
