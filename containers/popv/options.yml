@@ -12,6 +12,10 @@ fields:
     label: Directory with models directories
     inputBinding:
       prefix: --models-dir
+  dataVarnamesColumn:
+    type: string
+    inputBinding:
+      prefix: --data-varnames-column
   predictionMode:
     type: string?
     label: Popv prediction mode (fast, inference, or retrain)
@@ -49,11 +53,8 @@ fields:
     type: int?
     inputBinding:
       prefix: --samples-per-label
-  referenceVarnamesColumn:
-    type: string?
+  ensembleLookup:
+    type: File?
     inputBinding:
-      prefix: --ref-varnames-column
-  dataVarnamesColumn:
-    type: string?
-    inputBinding:
-      prefix: --data-varnames-column
+      prefix: --ensemble-lookup
+  

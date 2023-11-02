@@ -45,7 +45,13 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
             # seen_result_key is not added to the result in fast mode but still expected during compute_consensus
             # https://github.com/YosefLab/PopV/blob/main/popv/annotation.py#L64
             # https://github.com/YosefLab/PopV/blob/main/popv/algorithms/_onclass.py#L199
-            methods=["knn_on_scvi", "scanvi", "svm", "rf", "celltypist"],
+            # methods=["knn_on_scvi", "scanvi", "svm", "rf", "celltypist"],
+            methods=[
+                "knn_on_scvi",
+                "scanvi",
+                "svm",
+                "rf",
+            ],  # excludes celltypist for some HTTPS bug
         )
         return data
 
@@ -64,6 +70,9 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
             model_path,
             options["data_genes_column"],
         )
+        updated_data.var_names_make_unique()  # for resolving duplicate index bug
+        updated_data.X = numpy.rint(updated_data.X)  # for resolving non integer bug
+        updated_data.write_h5ad("lookat_2.h5ad")
         n_samples_per_label = self.get_n_samples_per_label(reference_data, options)
         query = popv.preprocessing.Process_Query(
             updated_data,
@@ -172,27 +181,7 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         new_data.obs_names = data.obs_names
         new_data.var_names = new_genes
         merged_data = anndata.concat([data, new_data], axis=1)
-        print(merged_data.shape)
-        merged_data_clean = self.combine_duplicate_columns(merged_data)
-        print(merged_data_clean.shape)
         return merged_data
-
-    def combine_duplicate_columns(self, data: scanpy.AnnData) -> scanpy.AnnData:
-        """Combines columns with same gene name takes their mean"""
-        # INCOMPLETE
-        duplicated_var_names = data.var_names[
-            data.var_names.duplicated(keep="first")
-        ].unique()
-        averaged_data = []
-        for duplicated_var_name in duplicated_var_names:
-            averaged_data.append(data[:, duplicated_var_name].X.mean(axis=1))
-        new_data = anndata.AnnData(
-            X=averaged_data, obs=data.obs, var=duplicated_var_names
-        )
-        data = anndata.concat(
-            [data[:, ~data.var_names.isin(duplicated_var_names)], new_data]
-        )
-        return data
 
 
 def _get_arg_parser():
