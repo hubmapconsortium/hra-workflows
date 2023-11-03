@@ -12,10 +12,10 @@ fields:
     label: Directory with models directories
     inputBinding:
       prefix: --models-dir
-  dataVarnamesColumn:
+  dataGenesColumn:
     type: string
     inputBinding:
-      prefix: --data-varnames-column
+      prefix: --data-genes-column
   queryLayersKey:
     type: string
     inputBinding:
