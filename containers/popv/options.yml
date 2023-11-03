@@ -12,6 +12,14 @@ fields:
     label: Directory with models directories
     inputBinding:
       prefix: --models-dir
+  dataVarnamesColumn:
+    type: string
+    inputBinding:
+      prefix: --data-varnames-column
+  queryLayersKey:
+    type: string
+    inputBinding:
+      prefix: --query-layers-key
   predictionMode:
     type: string?
     label: Popv prediction mode (fast, inference, or retrain)
@@ -29,10 +37,6 @@ fields:
     type: string?
     inputBinding:
       prefix: --query-batch-key
-  queryLayersKey:
-    type: string?
-    inputBinding:
-      prefix: --query-layers-key
   referenceLabelsKey:
     type: string?
     inputBinding:
@@ -49,3 +53,8 @@ fields:
     type: int?
     inputBinding:
       prefix: --samples-per-label
+  ensembleLookup:
+    type: File?
+    inputBinding:
+      prefix: --ensemble-lookup
+  
