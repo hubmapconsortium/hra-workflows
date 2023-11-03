@@ -8,8 +8,6 @@ import scanpy
 import anndata
 import torch
 import pandas
-
-# import typing as t
 import csv
 
 from src.algorithm import Algorithm, OrganLookup, add_common_arguments
@@ -34,10 +32,10 @@ class PopvOptions(t.TypedDict):
 class PopvAlgorithm(Algorithm[str, PopvOptions]):
     def __init__(self):
         super().__init__(OrganLookup)
-        # self.models_dir = Path(os.environ["MODELS_DIR"])
 
     def do_run(self, matrix: Path, organ: str, options: PopvOptions):
         data = scanpy.read_h5ad(matrix)
+        original = data.copy()
         data = self.prepare_query(data, organ, options)
         popv.annotation.annotate_data(
             data,
@@ -53,7 +51,8 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
                 "rf",
             ],  # excludes celltypist for some HTTPS bug
         )
-        return data
+        original.obs = data.obs
+        return original
 
     def prepare_query(
         self, data: scanpy.AnnData, organ: str, options: PopvOptions
@@ -63,18 +62,20 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         )
         model_path = self.find_model_dir(options["models_dir"], organ)
         reference_data = scanpy.read_h5ad(reference_data_path)
-        data, var_names = self.normalize_var_names(data, options)
-        # data.var_names = t.cast(t.Any, var_names)
-        updated_data = self.add_model_genes(
-            data,
-            model_path,
-            options["data_genes_column"],
-        )
-        updated_data.var_names_make_unique()  # for resolving duplicate index bug
-        updated_data.X = numpy.rint(updated_data.X)  # for resolving non integer bug
         n_samples_per_label = self.get_n_samples_per_label(reference_data, options)
+        data, var_names = self.normalize_var_names(data, options)
+
+        if options["query_layers_key"] == "raw":
+            options["query_layers_key"] = None
+            data.X = data.raw.X
+
+        data = self.add_model_genes(
+            data, model_path, options["data_genes_column"], options["query_layers_key"]
+        )
+        data.var_names_make_unique()
+
         query = popv.preprocessing.Process_Query(
-            updated_data,
+            data,
             reference_data,
             save_path_trained_models=str(model_path),
             prediction_mode=options["prediction_mode"],
@@ -90,7 +91,6 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
             hvg=None,
             use_gpu=False,  # Using gpu with docker requires additional setup
         )
-
         return query.adata
 
     def get_n_samples_per_label(
@@ -167,6 +167,7 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         data: scanpy.AnnData,
         model_path: Path,
         data_genes_column: str,
+        query_layers_key: str,
     ) -> scanpy.AnnData:
         """Adds genes from model not present in input data to input data. Needed for preprocessing bug"""
         model_genes = torch.load(
@@ -174,13 +175,12 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         )["var_names"]
         n_obs_data = data.X.shape[0]
         new_genes = set(numpy.setdiff1d(model_genes, data.var_names))
-        new_data = scanpy.AnnData(
-            X=numpy.zeros((n_obs_data, len(new_genes))), var=new_genes
-        )
+        zeroes = numpy.zeros((n_obs_data, len(new_genes)))
+        layers = {query_layers_key: zeroes} if query_layers_key else None
+        new_data = scanpy.AnnData(X=zeroes, var=new_genes, layers=layers)
         new_data.obs_names = data.obs_names
         new_data.var_names = new_genes
-        merged_data = anndata.concat([data, new_data], axis=1)
-        return merged_data
+        return anndata.concat([data, new_data], axis=1)
 
 
 def _get_arg_parser():
@@ -200,6 +200,9 @@ def _get_arg_parser():
     parser.add_argument(
         "--data-genes-column", required=True, help="Data gene names column"
     )
+    parser.add_argument(
+        "--query-layers-key", required=True, help="Name of layer with raw counts"
+    )
     parser.add_argument("--prediction-mode", default="fast", help="Prediction mode")
     parser.add_argument(
         "--cell-ontology-dir",
@@ -209,7 +212,6 @@ def _get_arg_parser():
     )
     parser.add_argument("--query-labels-key", help="Data labels key")
     parser.add_argument("--query-batch-key", help="Data batch key")
-    parser.add_argument("--query-layers-key", help="Name of layer with raw counts")
     parser.add_argument(
         "--ref-labels-key",
         default="cell_ontology_class",
