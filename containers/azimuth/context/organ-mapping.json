@@ -4,5 +4,9 @@
   "UBERON:0004539": "kidneyref",
   "UBERON:0002048": "lungref",
   "UBERON:0001004": "lungref",
-  "UBERON:0000948": "heartref"
+  "UBERON:0000948": "heartref",
+  "UBERON:0000955": "humancortexref",
+  "UBERON:0001264": "pancreasref",
+  "UBERON:0000029": "tonsilref",
+  "UBERON:0004537": "pbmcref"
 }
