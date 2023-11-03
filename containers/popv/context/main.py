@@ -25,7 +25,6 @@ class PopvOptions(t.TypedDict):
     ref_batch_key: str
     unknown_labels_key: str
     samples_per_label: int
-    data_genes_column: str
     ensemble_lookup: Path
 
 
@@ -69,9 +68,7 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
             options["query_layers_key"] = None
             data.X = data.raw.X
 
-        data = self.add_model_genes(
-            data, model_path, options["data_genes_column"], options["query_layers_key"]
-        )
+        data = self.add_model_genes(data, model_path, options["query_layers_key"])
         data.var_names_make_unique()
 
         query = popv.preprocessing.Process_Query(
@@ -166,7 +163,6 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         self,
         data: scanpy.AnnData,
         model_path: Path,
-        data_genes_column: str,
         query_layers_key: str,
     ) -> scanpy.AnnData:
         """Adds genes from model not present in input data to input data. Needed for preprocessing bug"""
@@ -196,9 +192,6 @@ def _get_arg_parser():
         type=Path,
         required=True,
         help="Path to models directory",
-    )
-    parser.add_argument(
-        "--data-genes-column", required=True, help="Data gene names column"
     )
     parser.add_argument(
         "--query-layers-key", required=True, help="Name of layer with raw counts"
