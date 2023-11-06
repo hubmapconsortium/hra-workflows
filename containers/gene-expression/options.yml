@@ -2,11 +2,11 @@ type: record
 name: options
 label: Gene expression options
 fields:
-  annotationColumn:
+  clidColumn:
     type: string?
-    label: Annotation column
+    label: Cell id column
     inputBinding:
-      prefix: --annotation-column
+      prefix: --clid-column
   geneExprColumn:
     type: string?
     label: Gene expression column
