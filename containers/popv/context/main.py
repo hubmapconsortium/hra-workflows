@@ -62,11 +62,15 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         model_path = self.find_model_dir(options["models_dir"], organ)
         reference_data = scanpy.read_h5ad(reference_data_path)
         n_samples_per_label = self.get_n_samples_per_label(reference_data, options)
-        data, var_names = self.normalize_var_names(data, options)
+        data = self.normalize_var_names(data, options)
 
         if options["query_layers_key"] == "raw":
             options["query_layers_key"] = None
             data.X = data.raw.X
+
+        if options["query_layers_key"] == "X":
+            options["query_layers_key"] = None
+            data.X = numpy.rint(data.X)
 
         data = self.add_model_genes(data, model_path, options["query_layers_key"])
         data.var_names_make_unique()
@@ -140,7 +144,7 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
 
     def normalize_var_names(
         self, data: scanpy.AnnData, options: PopvOptions
-    ) -> t.Tuple[scanpy.AnnData, pandas.Index]:
+    ) -> scanpy.AnnData:
         lookup = self.load_ensemble_lookup(options)
         names = data.var_names
 
@@ -149,7 +153,7 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
             return lookup.get(key, name)
 
         data.var_names = t.cast(t.Any, names.map(getNewName))
-        return data, names
+        return data
 
     def load_ensemble_lookup(self, options: PopvOptions):
         with open(options["ensemble_lookup"]) as file:
