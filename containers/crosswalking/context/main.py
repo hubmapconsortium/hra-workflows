@@ -1,25 +1,14 @@
 import argparse
+import re
+from pathlib import Path
+
 import anndata
 import pandas as pd
-from pathlib import Path
-import re
 
 
-def filter_crosswalk_table(
-    crosswalk_table: pd.DataFrame,
-    crosswalk_table_label_column: str,
-    crosswalk_table_clid_column: str,
-    crosswalk_table_match_column: str,
-) -> pd.DataFrame:
+def filter_crosswalk_table(table: pd.DataFrame, *columns: str) -> pd.DataFrame:
     """Filters the table to remove empty rows and keep only necessary columns"""
-    COLUMNS = [
-        crosswalk_table_label_column,
-        crosswalk_table_clid_column,
-        crosswalk_table_match_column,
-    ]
-    crosswalk_table.dropna(inplace=True)
-    crosswalk_table[COLUMNS] = crosswalk_table[COLUMNS].astype(str)
-    return crosswalk_table[COLUMNS].drop_duplicates()
+    return table[list(columns)].dropna().astype(str).drop_duplicates()
 
 
 def generate_iri(label: str):
@@ -32,43 +21,54 @@ def generate_iri(label: str):
 
 def crosswalk(
     matrix: anndata.AnnData,
-    annotation_column: str,
-    crosswalk_table: pd.DataFrame,
-    crosswalk_table_label_column: str,
-    crosswalk_table_clid_column: str,
-    crosswalk_table_match_column: str,
+    data_label_column: str,
+    data_clid_column: str,
+    data_match_column: str,
+    table: pd.DataFrame,
+    table_label_column: str,
+    table_clid_column: str,
+    table_merge_column: str,
 ) -> anndata.AnnData:
     """Gives each cell a CL ID and Match type using crosswalk table"""
-    filtered_crosswalk_table = filter_crosswalk_table(
-        crosswalk_table,
-        crosswalk_table_label_column,
-        crosswalk_table_clid_column,
-        crosswalk_table_match_column,
+    column_map = {
+        table_clid_column: data_clid_column,
+        table_merge_column: data_match_column,
+    }
+    table = filter_crosswalk_table(
+        table, table_label_column, table_clid_column, table_merge_column
     )
-    merged_obs = matrix.obs.merge(
-        filtered_crosswalk_table,
-        left_on=annotation_column,
-        right_on=crosswalk_table_label_column,
-        how="left",
-    ).drop(crosswalk_table_label_column, axis=1)
-    merged_obs.loc[
-        merged_obs[crosswalk_table_clid_column].isna(), crosswalk_table_clid_column
-    ] = merged_obs.apply(
-        lambda row: generate_iri(row[annotation_column]),
-        axis=1,
+    merged_obs = (
+        matrix.obs.merge(
+            table, left_on=data_label_column, right_on=table_label_column, how="left"
+        )
+        .drop(columns=table_label_column)
+        .rename(columns=column_map)
     )
-    merged_obs.loc[
-        merged_obs[crosswalk_table_match_column].isna(), crosswalk_table_match_column
-    ] = "skos:exactMatch"
     merged_obs.index = matrix.obs.index
-    matrix.obs = merged_obs
-    return matrix
+
+    _set_default_clid(merged_obs, data_clid_column)
+    _set_default_match(merged_obs, data_match_column)
+
+    result = matrix.copy()
+    result.obs = merged_obs
+    return result
+
+
+def _set_default_clid(obs: pd.DataFrame, column: str):
+    defaults = obs.apply(lambda row: generate_iri(row[column]), axis=1)
+    obs.loc[obs[column].isna(), column] = defaults
+
+
+def _set_default_match(obs: pd.DataFrame, column: str):
+    obs.loc[obs[column].isna(), column] = "skos:exactMatch"
 
 
 def main(args: argparse.Namespace):
     matrix = crosswalk(
         args.matrix,
         args.annotation_column,
+        args.clid_column,
+        args.match_column,
         args.crosswalk_table,
         args.crosswalk_table_label_column,
         args.crosswalk_table_clid_column,
@@ -80,9 +80,6 @@ def main(args: argparse.Namespace):
 def _get_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Add crosswalking to h5ad data")
     parser.add_argument("matrix", type=anndata.read_h5ad, help="h5ad data file")
-    parser.add_argument(
-        "--annotation-column", required=True, help="Column with annotations"
-    )
     parser.add_argument(
         "--crosswalk-table",
         type=pd.read_csv,
@@ -104,6 +101,15 @@ def _get_arg_parser() -> argparse.ArgumentParser:
         "--crosswalk-table-match-column",
         required=True,
         help="Column with match type in crosswalking table",
+    )
+    parser.add_argument(
+        "--annotation-column", default="hra_prediction", help="Column with annotations"
+    )
+    parser.add_argument(
+        "--clid-column", default="clid", help="Output column for cell ids"
+    )
+    parser.add_argument(
+        "--match-column", default="match_type", help="Output column for match"
     )
     parser.add_argument(
         "--output-matrix",
