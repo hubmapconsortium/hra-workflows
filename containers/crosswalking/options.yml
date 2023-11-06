@@ -17,7 +17,7 @@ fields:
     label: Azimuth label column in crosswalk table
     inputBinding:
       prefix: --crosswalk-table-label-column
- crosswalkTableClidColumn:
+  crosswalkTableClidColumn:
     type: string
     label: CL ID column in crosswalk table
     inputBinding:

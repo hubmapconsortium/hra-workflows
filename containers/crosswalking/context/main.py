@@ -25,7 +25,7 @@ def filter_crosswalk_table(
 def generate_iri(label: str):
     """generate IRIs for labels not found in crosswalk tables"""
     suffix = label.lower().strip()
-    suffix = re.sub(r"/\W+/g", "-", suffix)
+    suffix = re.sub(r"\W+", "-", suffix)
     suffix = re.sub(r"[^a-z0-9-]+", "", suffix)
     return "ASCTB-TEMP:" + suffix
 
