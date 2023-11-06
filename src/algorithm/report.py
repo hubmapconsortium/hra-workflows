@@ -23,6 +23,7 @@ class AlgorithmReport:
     annotations: Path
     report: Path
     data: t.Union[Path, anndata.AnnData]
+    prediction_column: str
     status = Status.SUCCESS
     failure_cause: t.Any = None
 
@@ -53,6 +54,7 @@ class AlgorithmReport:
         if not self.is_success():
             # Create an empty observations frame with the same columns as the original
             obs = pandas.DataFrame(columns=obs.columns)
+        obs['hra_prediction'] = obs[self.prediction_column]
         obs.to_csv(self.annotations)
 
     def save_report(self):

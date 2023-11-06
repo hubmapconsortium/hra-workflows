@@ -28,7 +28,7 @@ class CelltypistOrganLookup(OrganLookup[celltypist.Model]):
 
 class CelltypistAlgorithm(Algorithm[celltypist.Model, CelltypistOptions]):
     def __init__(self):
-        super().__init__(CelltypistOrganLookup)
+        super().__init__(CelltypistOrganLookup, "predicted_labels")
 
     def do_run(self, matrix: Path, organ: celltypist.Model, options: CelltypistOptions):
         data = scanpy.read_h5ad(matrix)

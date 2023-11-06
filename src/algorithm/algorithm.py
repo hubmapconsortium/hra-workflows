@@ -12,8 +12,13 @@ Options = t.TypeVar("Options")
 
 
 class Algorithm(t.Generic[Organ, Options], abc.ABC):
-    def __init__(self, organ_lookup: t.Callable[[Path], OrganLookup[Organ]]):
+    def __init__(
+        self,
+        organ_lookup: t.Callable[[Path], OrganLookup[Organ]],
+        prediction_column: str,
+    ):
         self.organ_lookup = organ_lookup
+        self.prediction_column = prediction_column
 
     def run(
         self,
@@ -26,7 +31,11 @@ class Algorithm(t.Generic[Organ, Options], abc.ABC):
         **options,
     ) -> AlgorithmReport:
         report = AlgorithmReport(
-            output_matrix, output_annotations, output_report, matrix
+            output_matrix,
+            output_annotations,
+            output_report,
+            matrix,
+            self.prediction_column,
         )
         try:
             lookup = self.organ_lookup(organ_mapping)

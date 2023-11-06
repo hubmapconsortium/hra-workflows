@@ -30,7 +30,7 @@ class PopvOptions(t.TypedDict):
 
 class PopvAlgorithm(Algorithm[str, PopvOptions]):
     def __init__(self):
-        super().__init__(OrganLookup)
+        super().__init__(OrganLookup, "popv_prediction")
 
     def do_run(self, matrix: Path, organ: str, options: PopvOptions):
         data = scanpy.read_h5ad(matrix)
