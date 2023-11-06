@@ -144,7 +144,7 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
 
     def normalize_var_names(
         self, data: scanpy.AnnData, options: PopvOptions
-    ) -> t.Tuple[scanpy.AnnData, pandas.Index]:
+    ) -> scanpy.AnnData:
         lookup = self.load_ensemble_lookup(options)
         names = data.var_names
 
