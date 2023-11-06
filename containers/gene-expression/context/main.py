@@ -1,9 +1,10 @@
 import argparse
+from pathlib import Path
+
 import anndata
 import numpy as np
-import scanpy as sc
 import pandas as pd
-from pathlib import Path
+import scanpy as sc
 
 MIN_CELLS_PER_CT = 2  # need a filter to reomve CTs with one cell as sc.tl.rank_genes_groups gives an error
 
@@ -86,7 +87,7 @@ def _get_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Add gene expressions to h5ad data")
     parser.add_argument("matrix", type=anndata.read_h5ad, help="h5ad data file")
     parser.add_argument(
-        "--annotation-column", required=True, help="Column with annotations"
+        "--annotation-column", default="hra_prediction", help="Column with annotations"
     )
     parser.add_argument(
         "--gene-expr-column", default="gene_expr", help="Column for gene_expr"
