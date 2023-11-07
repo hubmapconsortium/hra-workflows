@@ -48,14 +48,15 @@ class AlgorithmReport:
     def save_matrix(self):
         if isinstance(self.data, Path):
             self.data = anndata.read_h5ad(self.data)
-        self.data.write_h5ad(self.matrix)
 
         obs = self.data.obs
         if not self.is_success():
             # Create an empty observations frame with the same columns as the original
             obs = pandas.DataFrame(columns=obs.columns)
         obs['hra_prediction'] = obs[self.prediction_column]
+
         obs.to_csv(self.annotations)
+        self.data.write_h5ad(self.matrix)
 
     def save_report(self):
         result = {"status": self.status.value}

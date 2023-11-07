@@ -37,7 +37,7 @@ class AzimuthOrganLookup(OrganLookup[str]):
 
 class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
     def __init__(self):
-        super().__init__(AzimuthOrganLookup, "azimuth_label")
+        super().__init__(AzimuthOrganLookup, "predicted.ann_finest_level")
 
     def do_run(self, matrix: Path, organ: str, options: AzimuthOptions):
         data = anndata.read_h5ad(matrix)

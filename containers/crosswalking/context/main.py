@@ -46,7 +46,7 @@ def crosswalk(
     )
     merged_obs.index = matrix.obs.index
 
-    _set_default_clid(merged_obs, data_clid_column)
+    _set_default_clid(merged_obs, table_clid_column, data_label_column)
     _set_default_match(merged_obs, data_match_column)
 
     result = matrix.copy()
@@ -54,13 +54,23 @@ def crosswalk(
     return result
 
 
-def _set_default_clid(obs: pd.DataFrame, column: str):
-    defaults = obs.apply(lambda row: generate_iri(row[column]), axis=1)
-    obs.loc[obs[column].isna(), column] = defaults
+def _set_default_clid(obs: pd.DataFrame, clid_column: str, label_column: str):
+    defaults = obs.apply(lambda row: generate_iri(row[label_column]), axis=1)
+    obs.loc[obs[clid_column].isna(), clid_column] = defaults
 
 
 def _set_default_match(obs: pd.DataFrame, column: str):
     obs.loc[obs[column].isna(), column] = "skos:exactMatch"
+
+
+def _get_empty_table(args: argparse.Namespace) -> pd.DataFrame:
+    return pd.DataFrame(
+        columns=[
+            args.crosswalk_table_label_column,
+            args.crosswalk_table_clid_column,
+            args.crosswalk_table_match_column,
+        ]
+    )
 
 
 def main(args: argparse.Namespace):
@@ -69,7 +79,7 @@ def main(args: argparse.Namespace):
         args.annotation_column,
         args.clid_column,
         args.match_column,
-        args.crosswalk_table,
+        args.crosswalk_table or _get_empty_table(args),
         args.crosswalk_table_label_column,
         args.crosswalk_table_clid_column,
         args.crosswalk_table_match_column,
@@ -83,23 +93,21 @@ def _get_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--crosswalk-table",
         type=pd.read_csv,
-        required=True,
-        default="all_labels.csv",
         help="crosswalking csv file path",
     )
     parser.add_argument(
         "--crosswalk-table-label-column",
-        required=True,
+        default="label",
         help="Column with Azimuth label in crosswalking table",
     )
     parser.add_argument(
         "--crosswalk-table-clid-column",
-        required=True,
+        default="clid",
         help="Column with CL ID in crosswalking table",
     )
     parser.add_argument(
         "--crosswalk-table-match-column",
-        required=True,
+        default="match",
         help="Column with match type in crosswalking table",
     )
     parser.add_argument(
