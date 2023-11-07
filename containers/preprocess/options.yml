@@ -1,9 +1,0 @@
-type: record
-name: options
-label: Preprocess options
-fields:
-  geneColumn:
-    type: string
-    label: Gene label column
-    inputBinding:
-      prefix: --gene-column
