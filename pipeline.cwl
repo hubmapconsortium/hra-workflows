@@ -8,16 +8,16 @@ requirements:
   SubworkflowFeatureRequirement: {}
   SchemaDefRequirement:
     types:
-      - $import: ./containers/preprocess/options.yml
       - $import: ./containers/azimuth/options.yml
       - $import: ./containers/celltypist/options.yml
       - $import: ./containers/popv/options.yml
+      - $import: ./containers/crosswalking/options.yml
+      - $import: ./containers/gene-expression/options.yml
       - $import: ./containers/extract-summary/options.yml
 
 inputs:
   matrix: File
   organ: string
-  preprocessing: ./containers/preprocess/options.yml#options
   algorithms:
     type:
       type: array
@@ -27,7 +27,9 @@ inputs:
           azimuth: ./containers/azimuth/options.yml#options?
           celltypist: ./containers/celltypist/options.yml#options?
           popv: ./containers/popv/options.yml#options?
-          extract: ./containers/extract-summary/options.yml#options
+          crosswalk: ./containers/crosswalking/options.yml#options?
+          geneExpression: ./containers/gene-expression/options.yml#options?
+          summarize: ./containers/extract-summary/options.yml#options?
           directory: string?
 
 outputs:
@@ -36,12 +38,6 @@ outputs:
     outputSource: runEach/directory
 
 steps:
-  # preprocess:
-  #   run: ./containers/preprocess/pipeline.cwl
-  #   in:
-  #     matrix: matrix
-  #     options: preprocessing
-  #   out: [preprocessed_matrix]
   runEach:
     run: ./steps/run-one.cwl
     scatter: algorithm

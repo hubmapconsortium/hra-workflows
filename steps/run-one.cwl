@@ -8,21 +8,15 @@ requirements:
   SubworkflowFeatureRequirement: {}
   InlineJavascriptRequirement:
     expressionLib:
-      - |
-        function getDirectoryName(algorithm) {
-          var nonAlgorithms = ['extract', 'directory'];
-          var algorithms = Object.keys(algorithm).filter(function(key) {
-            return !nonAlgorithms.includes(key) && !!algorithm[key];
-          });
-          var candidates = [].concat(algorithm.directory, algorithms, '.');
-          return candidates.find(function(value) { return !!value });
-        }
+      - $include: ./js/options-util.js
 
   SchemaDefRequirement:
     types:
       - $import: ../containers/azimuth/options.yml
       - $import: ../containers/celltypist/options.yml
       - $import: ../containers/popv/options.yml
+      - $import: ../containers/crosswalking/options.yml
+      - $import: ../containers/gene-expression/options.yml
       - $import: ../containers/extract-summary/options.yml
 
 inputs:
@@ -35,7 +29,9 @@ inputs:
           azimuth: ../containers/azimuth/options.yml#options?
           celltypist: ../containers/celltypist/options.yml#options?
           popv: ../containers/popv/options.yml#options?
-          extract: ../containers/extract-summary/options.yml#options
+          crosswalk: ../containers/crosswalking/options.yml#options?
+          geneExpression: ../containers/gene-expression/options.yml#options?
+          summarize: ../containers/extract-summary/options.yml#options?
           directory: string?
 
 outputs:
@@ -51,21 +47,39 @@ steps:
       organ: organ
       algorithm: algorithm
     out: [annotations, annotated_matrix, report]
+
+  crosswalk:
+    run: ../containers/crosswalking/pipeline.cwl
+    in:
+      matrix: annotate/annotated_matrix
+      options:
+        source: algorithm
+        valueFrom: $(self.crosswalk || {})
+    out: [matrix_with_crosswalking]
+
+  gene_expression:
+    run: ../containers/gene-expression/pipeline.cwl
+    in:
+      matrix: crosswalk/matrix_with_crosswalking
+      options:
+        source: algorithm
+        valueFrom: $(self.geneExpression || {})
+    out: [matrix_with_gene_expr]
   
-  # extract:
-  #   run: ../containers/extract-summary/pipeline.cwl
-  #   in:
-  #     annotations: annotate/annotations
-  #     options:
-  #       source: algorithm
-  #       valueFrom: $(self.extract)
-  #   out: [summary]
+  summarize:
+    run: ../containers/extract-summary/pipeline.cwl
+    in:
+      matrix: gene_expression/matrix_with_gene_expr
+      options:
+        source: algorithm
+        valueFrom: $(self.summarize || getDefaultSummarizeOptions(self))
+    out: [summary, annotations]
 
   collect:
     run: ./collect-files.cwl
     in:
-      files: [annotate/annotations, annotate/annotated_matrix, annotate/report]
+      files: [summarize/summary, summarize/annotations, annotate/report]
       outputDirectory:
         source: algorithm
-        valueFrom: $(getDirectoryName(self))
+        valueFrom: $(selectOutputDirectory(self))
     out: [directory]
