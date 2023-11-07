@@ -7,26 +7,21 @@ fields:
     doc: Method used to extract annotations
     inputBinding:
       prefix: --annotation-method
-  cellLabelColumn:
-    type: string
-    doc: Cell label column. Used for grouping if cellIdColumn is not provided.
-    inputBinding:
-      prefix: --cell-label-column
-  geneLabelColumn:
-    type: string
-    doc: Gene label column. Used for grouping if geneIdColumn is not provided.
-    inputBinding:
-      prefix: --gene-label-column
   cellIdColumn:
     type: string?
-    doc: Optional cell id column. Groups by label if not provided.
+    doc: Cell id column
     inputBinding:
       prefix: --cell-id-column
-  geneIdColumn:
+  cellLabelColumn:
     type: string?
-    doc: Optional gene id column. Groups by label if not provided.
+    doc: Cell label column
     inputBinding:
-      prefix: --gene-id-column
+      prefix: --cell-label-column
+  geneExprColumn:
+    type: string?
+    doc: Gene expression column
+    inputBinding:
+      prefix: --gene-expr-column
   cellSource:
     type: string?
     doc: Cell source. Must be an IRI.

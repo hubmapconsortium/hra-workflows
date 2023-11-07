@@ -14,14 +14,18 @@ arguments:
   - /main.py
 
 inputs:
-  annotations:
+  matrix:
     type: File
-    doc: Annotations csv file
+    doc: Annotated matrix h5ad
     inputBinding:
       position: 0
   options: ./options.yml#options
 
 outputs:
+  annotations:
+    type: File
+    outputBinding:
+      glob: annotations.csv
   summary:
     type: File
     outputBinding:
