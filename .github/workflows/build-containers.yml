@@ -23,7 +23,6 @@ jobs:
             extract-summary,
             gene-expression,
             popv,
-            preprocess,
           ]
 
     steps:
