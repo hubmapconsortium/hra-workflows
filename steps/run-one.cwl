@@ -48,10 +48,18 @@ steps:
       algorithm: algorithm
     out: [annotations, annotated_matrix, report]
 
+  check_result:
+    run: ./check_annotation_report.cwl
+    in:
+      report: annotate/report
+      matrix: annotate/annotated_matrix
+    out: [matrix_or_null]
+
   crosswalk:
     run: ../containers/crosswalking/pipeline.cwl
+    when: $(!!inputs.matrix)
     in:
-      matrix: annotate/annotated_matrix
+      matrix: check_result/matrix_or_null
       options:
         source: algorithm
         valueFrom: $(self.crosswalk || {})
@@ -59,6 +67,7 @@ steps:
 
   gene_expression:
     run: ../containers/gene-expression/pipeline.cwl
+    when: $(!!inputs.matrix)
     in:
       matrix: crosswalk/matrix_with_crosswalking
       options:
@@ -68,6 +77,7 @@ steps:
   
   summarize:
     run: ../containers/extract-summary/pipeline.cwl
+    when: $(!!inputs.matrix)
     in:
       matrix: gene_expression/matrix_with_gene_expr
       options:
@@ -78,7 +88,9 @@ steps:
   collect:
     run: ./collect-files.cwl
     in:
-      files: [summarize/summary, summarize/annotations, annotate/report]
+      files:
+        source: [summarize/summary, summarize/annotations, annotate/report]
+        pickValue: all_non_null
       outputDirectory:
         source: algorithm
         valueFrom: $(selectOutputDirectory(self))

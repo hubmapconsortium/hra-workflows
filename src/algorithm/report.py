@@ -9,7 +9,6 @@ import typing as t
 from pathlib import Path
 
 import anndata
-import pandas
 
 
 class Status(enum.Enum):
@@ -49,13 +48,10 @@ class AlgorithmReport:
         if isinstance(self.data, Path):
             self.data = anndata.read_h5ad(self.data)
 
-        obs = self.data.obs
-        if not self.is_success():
-            # Create an empty observations frame with the same columns as the original
-            obs = pandas.DataFrame(columns=obs.columns)
-        obs['hra_prediction'] = obs[self.prediction_column]
+        if self.is_success():
+            self.data.obs["hra_prediction"] = self.data.obs[self.prediction_column]
 
-        obs.to_csv(self.annotations)
+        self.data.obs.to_csv(self.annotations)
         self.data.write_h5ad(self.matrix)
 
     def save_report(self):

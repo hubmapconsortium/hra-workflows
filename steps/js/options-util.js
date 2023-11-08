@@ -3,7 +3,7 @@ var ALGORITHMS = ["azimuth", "celltypist", "popv"];
 function _find_algorithm(obj) {
   for (var index = 0; index < ALGORITHMS.length; ++index) {
     var name = ALGORITHMS[index];
-    if (typeof obj[name] === "object") {
+    if (typeof obj[name] === "object" && obj[name] !== null) {
       return name;
     }
   }
