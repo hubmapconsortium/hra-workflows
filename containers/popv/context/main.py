@@ -34,7 +34,6 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
 
     def do_run(self, matrix: Path, organ: str, options: PopvOptions):
         data = scanpy.read_h5ad(matrix)
-        original = data.copy()
         data = self.prepare_query(data, organ, options)
         popv.annotation.annotate_data(
             data,
@@ -50,8 +49,8 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
                 "rf",
             ],  # excludes celltypist for some HTTPS bug
         )
-        original.obs = data.obs
-        return original
+
+        return data
 
     def prepare_query(
         self, data: scanpy.AnnData, organ: str, options: PopvOptions
