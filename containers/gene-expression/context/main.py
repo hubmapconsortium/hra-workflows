@@ -1,4 +1,5 @@
 import argparse
+import json
 from pathlib import Path
 
 import anndata
@@ -42,8 +43,8 @@ def get_marker_genes_with_expr(matrix, clid_column, cell_type, marker_genes):
         output.append(
             {
                 "gene_label": gene,
-                "mean_gene_expr_value": get_mean_expr_value(
-                    matrix, clid_column, cell_type, gene
+                "mean_gene_expr_value": float(
+                    get_mean_expr_value(matrix, clid_column, cell_type, gene)
                 ),
             }
         )
@@ -70,7 +71,7 @@ def get_gene_expr(matrix: anndata.AnnData, clid_column: str, gene_expr_column: s
     merged_obs = matrix.obs.merge(
         ct_marker_genes_df[[clid_column, gene_expr_column]], how="left"
     )
-    merged_obs[gene_expr_column] = merged_obs[gene_expr_column].astype(str)
+    merged_obs[gene_expr_column] = merged_obs[gene_expr_column].apply(json.dumps)
     merged_obs.index = matrix.obs.index
     matrix.obs = merged_obs
     return matrix
