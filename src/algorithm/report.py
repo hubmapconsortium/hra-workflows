@@ -21,15 +21,14 @@ class AlgorithmReport:
     matrix: Path
     annotations: Path
     report: Path
-    data: t.Union[Path, anndata.AnnData]
-    prediction_column: str
+    data: t.Optional[anndata.AnnData] = None
     status = Status.SUCCESS
     failure_cause: t.Any = None
 
     def is_success(self) -> bool:
         return self.status == Status.SUCCESS
 
-    def set_success(self, data: t.Union[Path, anndata.AnnData]):
+    def set_success(self, data: anndata.AnnData):
         self.status = Status.SUCCESS
         self.data = data
         self.failure_cause = None
@@ -45,14 +44,10 @@ class AlgorithmReport:
         self.save_report()
 
     def save_matrix(self):
-        if isinstance(self.data, Path):
-            self.data = anndata.read_h5ad(self.data)
-
-        if self.is_success():
-            self.data.obs["hra_prediction"] = self.data.obs[self.prediction_column]
-
-        self.data.obs.to_csv(self.annotations)
-        self.data.write_h5ad(self.matrix)
+        matrix = self.data
+        if matrix is not None:
+            matrix.obs.to_csv(self.annotations)
+            matrix.write_h5ad(self.matrix)
 
     def save_report(self):
         result = {"status": self.status.value}

@@ -1,3 +1,4 @@
+import json
 import logging
 import subprocess
 import typing as t
@@ -11,37 +12,19 @@ from src.algorithm import Algorithm, OrganLookup, add_common_arguments
 
 class AzimuthOptions(t.TypedDict):
     reference_data_dir: Path
-
-
-class AzimuthOrganLookup(OrganLookup[str]):
-    def __init__(self, mapping_file: Path):
-        super().__init__(mapping_file)
-
-    def get_builtin_options(self):
-        # TODO read from mapping file?
-        references = [
-            "adiposeref",
-            "bonemarrowref",
-            "fetusref",
-            "heartref",
-            "humancortexref",
-            "kidneyref",
-            "lungref",
-            "mousecortexref",
-            "pancreasref",
-            "pbmcref",
-            "tonsilref",
-        ]
-        return zip(references, references)
+    annotation_levels: Path
 
 
 class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
     def __init__(self):
-        super().__init__(AzimuthOrganLookup, "predicted.ann_finest_level")
+        super().__init__(OrganLookup)
 
     def do_run(self, matrix: Path, organ: str, options: AzimuthOptions):
         data = anndata.read_h5ad(matrix)
         reference_data = self.find_reference_data(organ, options["reference_data_dir"])
+        annotation_level = self.find_annotation_level(
+            organ, options["annotation_levels"]
+        )
 
         # Azimuth chokes when trying to load matrices that has
         # obs columns of dtype 'object'. As a workaround we create a
@@ -57,7 +40,7 @@ class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
         annotated_matrix = anndata.read_h5ad(annotated_matrix_path)
         self.copy_annotations(data, annotated_matrix)
 
-        return data
+        return data, annotation_level
 
     def create_clean_matrix(self, matrix: anndata.AnnData):
         clean_obs = pandas.DataFrame(index=matrix.obs.index)
@@ -88,6 +71,11 @@ class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
         # idx.annoy and ref.Rds is always located inside an 'azimuth' subdirectory
         return subdir / "azimuth"
 
+    def find_annotation_level(self, organ: str, path: Path):
+        with open(path) as file:
+            levels_by_organ = json.load(file)
+        return "predicted." + levels_by_organ[organ]
+
     def _find_in_dir(
         self, dir: Path, cond: t.Callable[[Path], bool], error_msg: str, warn_msg: str
     ):
@@ -108,6 +96,12 @@ def _get_arg_parser():
         type=Path,
         required=True,
         help="Path to directory with reference data",
+    )
+    parser.add_argument(
+        "--annotation-levels",
+        type=Path,
+        default="/annotation-levels.json",
+        help="Json file with organ to annotation levels",
     )
 
     return parser
