@@ -65,7 +65,7 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
 
         if options["query_layers_key"] == "raw":
             options["query_layers_key"] = None
-            data.X = data.raw.X
+            data.X = numpy.rint(data.raw.X)
 
         if options["query_layers_key"] == "X":
             options["query_layers_key"] = None
