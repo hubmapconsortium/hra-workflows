@@ -36,6 +36,7 @@ class AlgorithmReport:
 
     def set_failure(self, cause: t.Any):
         self.status = Status.FAILURE
+        self.data = anndata.AnnData()
         self.failure_cause = cause
         return self
 
