@@ -32,7 +32,7 @@ def unique_rows_to_summary_rows(
 
     df["@type"] = "CellSummaryRow"
     df["percentage"] = df["count"] / df["count"].sum()
-    df["gene_expr"] = df["gene_expr"].astype(object).apply(json.loads)
+    df["gene_expr"] = df["gene_expr"].astype(object).apply(lambda x: [] if pd.isna(x) else json.loads(x))
     return df.to_dict("records")
 
 
