@@ -9,6 +9,7 @@ def get_unique_rows_with_counts(
     matrix: anndata.AnnData, clid_column: str
 ) -> pd.DataFrame:
     counts = matrix.obs.value_counts(clid_column).reset_index()
+    counts.columns = [clid_column, "count"]
     obs_with_counts = matrix.obs.merge(counts, how="left")
     return obs_with_counts.drop_duplicates(clid_column)
 
