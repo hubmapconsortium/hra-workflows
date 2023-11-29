@@ -8,5 +8,8 @@
   "UBERON:0000955": "humancortexref",
   "UBERON:0001264": "pancreasref",
   "UBERON:0000029": "tonsilref",
-  "UBERON:0004537": "pbmcref"
+  "UBERON:0004537": "pbmcref",
+  "UBERON:0000178": "pbmcref",
+  "UBERON:0002371": "bonemarrowref",
+  "UBERON:0001013": "adiposeref"
 }
