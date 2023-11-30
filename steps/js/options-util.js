@@ -15,8 +15,9 @@ function selectOutputDirectory(obj) {
   return obj["directory"] || _find_algorithm(obj) || ".";
 }
 
-function getDefaultSummarizeOptions(obj) {
+function getSummarizeOptions(obj) {
   return {
     annotationMethod: _find_algorithm(obj) || "unknown",
+    ...(obj.summarize ?? {})
   };
 }
