@@ -82,7 +82,7 @@ steps:
       matrix: gene_expression/matrix_with_gene_expr
       options:
         source: algorithm
-        valueFrom: $(self.summarize && getDefaultSummarizeOptions(self))
+        valueFrom: $(getDefaultSummarizeOptions(self))
     out: [summary, annotations]
 
   collect:
