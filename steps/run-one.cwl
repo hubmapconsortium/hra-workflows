@@ -6,7 +6,9 @@ requirements:
   MultipleInputFeatureRequirement: {}
   StepInputExpressionRequirement: {}
   SubworkflowFeatureRequirement: {}
-
+  InlineJavascriptRequirement:
+    expressionLib:
+      - $include: ./js/options-util.js
   SchemaDefRequirement:
     types:
       - $import: ../containers/azimuth/options.yml
