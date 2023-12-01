@@ -18,6 +18,6 @@ function selectOutputDirectory(obj) {
 function getSummarizeOptions(obj) {
   return {
     annotationMethod: _find_algorithm(obj) || 'unknown',
-    ...(obj.summarize ?? {}),
+    ...(obj.algorithms.splice(-1)[0].summarize ?? {}),
   };
 }
