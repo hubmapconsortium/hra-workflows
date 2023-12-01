@@ -1,23 +1,22 @@
-var ALGORITHMS = ['azimuth', 'celltypist', 'popv'];
+var ALGORITHMS = ["azimuth", "celltypist", "popv"];
 
 function _find_algorithm(obj) {
-  for (var spec of obj.algorithms) {
-    for (var key of Object.keys(spec)) {
-      if (ALGORITHMS.includes(key)) {
-        return key;
-      }
+  for (var index = 0; index < ALGORITHMS.length; ++index) {
+    var name = ALGORITHMS[index];
+    if (typeof obj[name] === "object") {
+      return name;
     }
   }
-  return undefined;
+
+  return null;
 }
 
 function selectOutputDirectory(obj) {
-  return obj['directory'] || _find_algorithm(obj) || '.';
+  return obj["directory"] || _find_algorithm(obj) || ".";
 }
 
-function getSummarizeOptions(obj) {
+function getDefaultSummarizeOptions(obj) {
   return {
-    annotationMethod: _find_algorithm(obj) || 'unknown',
-    ...(obj.algorithms.splice(-1)[0].summarize ?? {}),
+    annotationMethod: _find_algorithm(obj) || "unknown",
   };
 }
