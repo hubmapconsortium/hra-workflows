@@ -82,7 +82,7 @@ steps:
       matrix: gene_expression/matrix_with_gene_expr
       options:
         source: algorithm
-        valueFrom: $(getSummarizeOptions(self))
+        valueFrom: $(self.summarize || {})
     out: [summary, annotations]
 
   collect:
@@ -93,5 +93,5 @@ steps:
         pickValue: all_non_null
       outputDirectory:
         source: algorithm
-        valueFrom: $(selectOutputDirectory(self))
+        valueFrom: $(self.directory || {})
     out: [directory]
