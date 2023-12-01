@@ -3,7 +3,7 @@ name: options
 label: Extract summary options
 fields:
   annotationMethod:
-    type: string
+    type: string?
     doc: Method used to extract annotations
     inputBinding:
       prefix: --annotation-method
