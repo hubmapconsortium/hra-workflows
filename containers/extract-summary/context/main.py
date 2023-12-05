@@ -45,7 +45,7 @@ def main(args: argparse.Namespace):
     summary = {
         "@type": "CellSummary",
         "annotation_method": args.annotation_method,
-        "modality": "bulk",
+        "modality": "sc_bulk",
         "cell_source": args.cell_source,
         "summary": summary_rows,
     }
