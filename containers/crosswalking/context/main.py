@@ -27,15 +27,15 @@ def crosswalk(
     table: pd.DataFrame,
     table_label_column: str,
     table_clid_column: str,
-    table_merge_column: str,
+    table_match_column: str,
 ) -> anndata.AnnData:
     """Gives each cell a CL ID and Match type using crosswalk table"""
     column_map = {
         table_clid_column: data_clid_column,
-        table_merge_column: data_match_column,
+        table_match_column: data_match_column,
     }
     table = filter_crosswalk_table(
-        table, table_label_column, table_clid_column, table_merge_column
+        table, table_label_column, table_clid_column, table_match_column
     )
     merged_obs = (
         matrix.obs.merge(
