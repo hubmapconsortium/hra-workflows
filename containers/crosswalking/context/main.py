@@ -79,7 +79,7 @@ def main(args: argparse.Namespace):
         args.annotation_column,
         args.clid_column,
         args.match_column,
-        args.crosswalk_table or _get_empty_table(args),
+        args.crosswalk_table if args.crosswalk_table is not None else _get_empty_table(args),
         args.crosswalk_table_label_column,
         args.crosswalk_table_clid_column,
         args.crosswalk_table_match_column,
