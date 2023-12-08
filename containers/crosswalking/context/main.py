@@ -46,7 +46,7 @@ def crosswalk(
     )
     merged_obs.index = matrix.obs.index
 
-    _set_default_clid(merged_obs, table_clid_column, data_label_column)
+    _set_default_clid(merged_obs, data_clid_column, data_label_column)
     _set_default_match(merged_obs, data_match_column)
 
     result = matrix.copy()
