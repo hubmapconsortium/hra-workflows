@@ -19,10 +19,12 @@ class CelltypistOrganLookup(OrganLookup[celltypist.Model]):
         super().__init__(mapping_file)
 
     def get_builtin_options(self):
+        """Get builtin celltypist models."""
         models = celltypist.models.get_all_models()
         return map(lambda model: (model, self.from_raw(model)), models)
 
     def from_raw(self, id: str):
+        """Load a celltypist model."""
         return celltypist.models.Model.load(id)
 
 
@@ -31,6 +33,7 @@ class CelltypistAlgorithm(Algorithm[celltypist.Model, CelltypistOptions]):
         super().__init__(CelltypistOrganLookup, "predicted_labels")
 
     def do_run(self, matrix: Path, organ: celltypist.Model, options: CelltypistOptions):
+        """Annotate data using celltypist."""
         data = scanpy.read_h5ad(matrix)
         data = self.normalize(data)
         data, var_names = self.normalize_var_names(data, options)
@@ -39,6 +42,17 @@ class CelltypistAlgorithm(Algorithm[celltypist.Model, CelltypistOptions]):
         return data
 
     def normalize(self, data: scanpy.AnnData) -> scanpy.AnnData:
+        """Normalizes data according to celltypist requirements.
+
+        Celltypist requires data to be log1p normalized with 10,000 counts per cell.
+        See https://github.com/Teichlab/celltypist for details.
+
+        Args:
+            data (scanpy.AnnData): Original data to be normalized
+
+        Returns:
+            scanpy.AnnData: Normalized data
+        """
         primary_column = "feature_name"
         alternative_primary_column = "gene_symbol"
         if primary_column not in data.var.columns:
@@ -58,6 +72,15 @@ class CelltypistAlgorithm(Algorithm[celltypist.Model, CelltypistOptions]):
     def normalize_var_names(
         self, data: scanpy.AnnData, options: CelltypistOptions
     ) -> t.Tuple[scanpy.AnnData, pandas.Index]:
+        """Normalizes variable names, replacing ensemble ids with the corresponding gene name.
+
+        Args:
+            data (scanpy.AnnData): Data with potentially non-normalized names
+            options (CelltypistOptions): Options containing the ensemble id mapping file path
+
+        Returns:
+            t.Tuple[scanpy.AnnData, pandas.Index]: The normalized data along with the original names
+        """
         lookup = self.load_ensemble_lookup(options)
         names = data.var_names
 
@@ -68,7 +91,15 @@ class CelltypistAlgorithm(Algorithm[celltypist.Model, CelltypistOptions]):
         data.var_names = t.cast(t.Any, names.map(getNewName))
         return data, names
 
-    def load_ensemble_lookup(self, options: CelltypistOptions):
+    def load_ensemble_lookup(self, options: CelltypistOptions) -> t.Dict[str, str]:
+        """Load a file mapping ensemble id to gene names.
+
+        Args:
+            options (CelltypistOptions): Options with the mapping file path
+
+        Returns:
+            t.Dict[str, str]: Loaded mapping
+        """
         with open(options["ensemble_lookup"]) as file:
             reader = csv.DictReader(file)
             lookup: t.Dict[str, str] = {}

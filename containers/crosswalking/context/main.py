@@ -7,12 +7,28 @@ import pandas as pd
 
 
 def filter_crosswalk_table(table: pd.DataFrame, *columns: str) -> pd.DataFrame:
-    """Filters the table to remove empty rows and keep only necessary columns"""
+    """Filter the crosswalk table to only include specified columns.
+
+    Also removes empty rows and cast values to string.
+
+    Args:
+        table (pd.DataFrame): Original full crosswalk table
+
+    Returns:
+        pd.DataFrame: Filtered table
+    """
     return table[list(columns)].dropna().astype(str).drop_duplicates()
 
 
-def generate_iri(label: str):
-    """generate IRIs for labels not found in crosswalk tables"""
+def generate_iri(label: str) -> str:
+    """Create a temporary IRI based on a label.
+
+    Args:
+        label (str): Label for the row
+
+    Returns:
+        str: Temporary IRI
+    """
     suffix = label.lower().strip()
     suffix = re.sub(r"\W+", "-", suffix)
     suffix = re.sub(r"[^a-z0-9-]+", "", suffix)
@@ -29,7 +45,21 @@ def crosswalk(
     table_clid_column: str,
     table_match_column: str,
 ) -> anndata.AnnData:
-    """Gives each cell a CL ID and Match type using crosswalk table"""
+    """Crosswalks the data adding CLIDs and match types using a crosswalk table.
+
+    Args:
+        matrix (anndata.AnnData): Data to crosswalk
+        data_label_column (str): Column used to match against the table
+        data_clid_column (str): Column to store CLIDs in
+        data_match_column (str): Column to store match type in
+        table (pd.DataFrame): Crosswalk table
+        table_label_column (str): Column used to match against the data
+        table_clid_column (str): Column storing CLIDs
+        table_match_column (str): Column storing match type
+
+    Returns:
+        anndata.AnnData: Crosswalked data with CLIDs and match type added
+    """
     column_map = {
         table_clid_column: data_clid_column,
         table_match_column: data_match_column,
@@ -54,16 +84,37 @@ def crosswalk(
     return result
 
 
-def _set_default_clid(obs: pd.DataFrame, clid_column: str, label_column: str):
+def _set_default_clid(obs: pd.DataFrame, clid_column: str, label_column: str) -> None:
+    """Adds default CLIDs to rows that did not match against the crosswalk table.
+
+    Args:
+        obs (pd.DataFrame): Data rows
+        clid_column (str): Column to check and update with default CLIDs
+        label_column (str): Column used when generating default CLIDs
+    """
     defaults = obs.apply(lambda row: generate_iri(row[label_column]), axis=1)
     obs.loc[obs[clid_column].isna(), clid_column] = defaults
 
 
-def _set_default_match(obs: pd.DataFrame, column: str):
+def _set_default_match(obs: pd.DataFrame, column: str) -> None:
+    """Adds default match type to rows that did not match against the crosswalk table.
+
+    Args:
+        obs (pd.DataFrame): Data rows
+        column (str): Column to check and update with default match type
+    """
     obs.loc[obs[column].isna(), column] = "skos:exactMatch"
 
 
 def _get_empty_table(args: argparse.Namespace) -> pd.DataFrame:
+    """Creates an empty crosswalk table.
+
+    Args:
+        args (argparse.Namespace): Same arguments as provided to `main`
+
+    Returns:
+        pd.DataFrame: An empty table
+    """
     return pd.DataFrame(
         columns=[
             args.crosswalk_table_label_column,
@@ -74,12 +125,24 @@ def _get_empty_table(args: argparse.Namespace) -> pd.DataFrame:
 
 
 def main(args: argparse.Namespace):
+    """Crosswalks a h5ad file and saves the result to another h5ad file.
+
+    Args:
+        args (argparse.Namespace):
+            CLI arguments, must contain "matrix",
+            "annotation_column", "clid_column", "match_column",
+            "crosswalk_table", "crosswalk_table_label_column",
+            "crosswalk_table_clid_column", "crosswalk_table_match_column", and
+            "output_matrix"
+    """
     matrix = crosswalk(
         args.matrix,
         args.annotation_column,
         args.clid_column,
         args.match_column,
-        args.crosswalk_table if args.crosswalk_table is not None else _get_empty_table(args),
+        args.crosswalk_table
+        if args.crosswalk_table is not None
+        else _get_empty_table(args),
         args.crosswalk_table_label_column,
         args.crosswalk_table_clid_column,
         args.crosswalk_table_match_column,

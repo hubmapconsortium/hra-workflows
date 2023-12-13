@@ -20,6 +20,7 @@ class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
         super().__init__(OrganLookup)
 
     def do_run(self, matrix: Path, organ: str, options: AzimuthOptions):
+        """Annotate data using azimuth."""
         data = anndata.read_h5ad(matrix)
         reference_data = self.find_reference_data(organ, options["reference_data_dir"])
         annotation_level = self.find_annotation_level(
@@ -42,7 +43,15 @@ class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
 
         return data, annotation_level
 
-    def create_clean_matrix(self, matrix: anndata.AnnData):
+    def create_clean_matrix(self, matrix: anndata.AnnData) -> anndata.AnnData:
+        """Creates a copy of the data with all observation columns removed.
+
+        Args:
+            matrix (anndata.AnnData): Original data
+
+        Returns:
+            anndata.AnnData: Cleaned data
+        """
         clean_obs = pandas.DataFrame(index=matrix.obs.index)
         clean_matrix = matrix.copy()
         clean_matrix.obs = clean_obs
@@ -50,15 +59,43 @@ class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
 
     def copy_annotations(
         self, matrix: anndata.AnnData, annotated_matrix: anndata.AnnData
-    ):
+    ) -> None:
+        """Copies annotations from one matrix to another.
+
+        Args:
+            matrix (anndata.AnnData): Matrix to copy to
+            annotated_matrix (anndata.AnnData): Matrix to copy from
+        """
         matrix.obs = matrix.obs.join(annotated_matrix.obs, rsuffix="_azimuth")
 
-    def run_azimuth_scripts(self, matrix_path: Path, reference_data: Path):
+    def run_azimuth_scripts(self, matrix_path: Path, reference_data: Path) -> str:
+        """Creates a subprocess running the Azimuth annotation R script.
+
+        Args:
+            matrix_path (Path): Path to data file
+            reference_data (Path): Path to organ reference data directory
+
+        Returns:
+            str: Path to the output data file
+        """
         script_command = ["Rscript", "/run_azimuth.R", matrix_path, reference_data]
         subprocess.run(script_command, capture_output=True, check=True, text=True)
         return "./result.h5ad"
 
-    def find_reference_data(self, organ: str, dir: Path):
+    def find_reference_data(self, organ: str, dir: Path) -> Path:
+        """Finds the reference data directory for an organ.
+
+        Args:
+            organ (str): Organ name
+            dir (Path): Directory to search
+
+        Raises:
+            ValueError: If no reference data could be found
+
+        Returns:
+            Path: The data directory
+        """
+
         def is_reference_data_candidate(path: Path):
             return path.is_dir() and organ.lower() in path.name.lower()
 
@@ -71,14 +108,39 @@ class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
         # idx.annoy and ref.Rds is always located inside an 'azimuth' subdirectory
         return subdir / "azimuth"
 
-    def find_annotation_level(self, organ: str, path: Path):
+    def find_annotation_level(self, organ: str, path: Path) -> str:
+        """Finds the column name which contains the predictions.
+
+        Args:
+            organ (str): Organ name
+            path (Path): Path to file containing information about column names
+
+        Returns:
+            str: Column name
+        """
         with open(path) as file:
             levels_by_organ = json.load(file)
         return "predicted." + levels_by_organ[organ]
 
     def _find_in_dir(
         self, dir: Path, cond: t.Callable[[Path], bool], error_msg: str, warn_msg: str
-    ):
+    ) -> Path:
+        """Search a directory for a entry which passes the provided test.
+
+        Args:
+            dir (Path): Directory to search
+            cond (t.Callable[[Path], bool]): Test used to match sub entries
+            error_msg (str): Error message used when no entries match
+            warn_msg (str): Warning message use when multiple entries match
+
+        Raises:
+            ValueError: If there are no matching sub entries
+
+        Returns:
+            Path:
+                The matching entry.
+                If multiple entries match the one with the shortest name is returned.
+        """
         candidates = list(filter(cond, dir.iterdir()))
         candidates.sort(key=lambda path: len(path.name))
 

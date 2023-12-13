@@ -14,6 +14,13 @@ RunResult = t.Union[AnnDataOrPath, t.Tuple[AnnDataOrPath, str]]
 
 
 class Algorithm(t.Generic[Organ, Options], abc.ABC):
+    """An annotation algorithm.
+
+    Attributes:
+        organ_lookup (t.Callable[[Path], OrganLookup[Organ]]): Callable to create an organ lookup
+        prediction_column (t.Optional[str]): Column in annotated data with the predictions
+    """
+
     def __init__(
         self,
         organ_lookup: t.Callable[[Path], OrganLookup[Organ]],
@@ -32,6 +39,19 @@ class Algorithm(t.Generic[Organ, Options], abc.ABC):
         output_report: Path,
         **options,
     ) -> AlgorithmReport:
+        """Runs the algorithm to annotate data.
+
+        Args:
+            matrix (Path): Path to h5ad data file
+            organ (str): Raw organ identifier
+            organ_mapping (Path): Path to json file containing organ mapping information
+            output_matrix (Path): Path where the annotated h5ad file will be written
+            output_annotations (Path): Path where the annotation csv will be written
+            output_report (Path): Path where the algorithm report json will be written
+
+        Returns:
+            AlgorithmReport: Report containing the status of the run
+        """
         report = AlgorithmReport(output_matrix, output_annotations, output_report)
         try:
             lookup = self.organ_lookup(organ_mapping)
@@ -45,9 +65,31 @@ class Algorithm(t.Generic[Organ, Options], abc.ABC):
 
     @abc.abstractmethod
     def do_run(self, matrix: Path, organ: Organ, options: Options) -> RunResult:
+        """Perform a annotation run. Must be overridden in subclasses.
+
+        Args:
+            matrix (Path): Path to the h5ad data file
+            organ (Organ): Organ associated with the data
+            options (Options): Additional algorithm specific options
+
+        Returns:
+            RunResult:
+                Annotated data either in-memory or a path to a h5ad.
+                Can also return a tuple where the first element is
+                the annotated data and the second element is the name
+                of the column that stores the predictions.
+        """
         ...
 
     def __post_process_result(self, result: RunResult) -> anndata.AnnData:
+        """Normalize the result of a run.
+
+        Args:
+            result (RunResult): Non-normalized result value
+
+        Returns:
+            anndata.AnnData: Loaded h5ad data
+        """
         prediction_column = self.prediction_column
         if isinstance(result, tuple):
             result, prediction_column = result

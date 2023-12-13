@@ -1,5 +1,6 @@
 import argparse
 import json
+import typing as t
 
 import anndata
 import pandas as pd
@@ -8,6 +9,15 @@ import pandas as pd
 def get_unique_rows_with_counts(
     matrix: anndata.AnnData, clid_column: str
 ) -> pd.DataFrame:
+    """Computes unique CLIDs and the total count for each.
+
+    Args:
+        matrix (anndata.AnnData): Data
+        clid_column (str): Column with CLIDs
+
+    Returns:
+        pd.DataFrame: A frame with unique CLIDs and counts added
+    """
     counts = matrix.obs.value_counts(clid_column).reset_index()
     counts.columns = [clid_column, "count"]
     obs_with_counts = matrix.obs.merge(counts, how="left")
@@ -20,7 +30,19 @@ def unique_rows_to_summary_rows(
     label_column: str,
     gene_expr_column: str,
     counts_column="count",
-):
+) -> t.List[dict]:
+    """Converts a data frame with unique CLIDs rows into cell summary rows.
+
+    Args:
+        unique (pd.DataFrame): Data with unique CLIDs
+        clid_column (str): Column with CLIDs
+        label_column (str): Column with labels
+        gene_expr_column (str): Column with gene expressions
+        counts_column (str, optional): Column with the total counts. Defaults to "count".
+
+    Returns:
+        t.List[dict]: A cell summary for each row in the source data
+    """
     columns = [clid_column, label_column, gene_expr_column, counts_column]
     df = unique[columns].rename(
         columns={
@@ -33,11 +55,24 @@ def unique_rows_to_summary_rows(
 
     df["@type"] = "CellSummaryRow"
     df["percentage"] = df["count"] / df["count"].sum()
-    df["gene_expr"] = df["gene_expr"].astype(object).apply(lambda x: [] if pd.isna(x) else json.loads(x))
+    df["gene_expr"] = (
+        df["gene_expr"]
+        .astype(object)
+        .apply(lambda x: [] if pd.isna(x) else json.loads(x))
+    )
     return df.to_dict("records")
 
 
 def main(args: argparse.Namespace):
+    """Extract and save a cell summary from annotated data.
+
+    Args:
+        args (argparse.Namespace):
+            CLI arguments, must contain "matrix", "annotation_method",
+            "cell_id_column", "cell_label_column", "gene_expr_column",
+            "cell_source, "jsonld_context", "output", and
+            "annotations_output"
+    """
     unique_rows = get_unique_rows_with_counts(args.matrix, args.cell_id_column)
     summary_rows = unique_rows_to_summary_rows(
         unique_rows, args.cell_id_column, args.cell_label_column, args.gene_expr_column

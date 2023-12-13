@@ -1,14 +1,13 @@
+import csv
 import typing as t
 from logging import warn
 from pathlib import Path
 
+import anndata
 import numpy
 import popv
 import scanpy
-import anndata
 import torch
-import pandas
-import csv
 
 from src.algorithm import Algorithm, OrganLookup, add_common_arguments
 
@@ -33,6 +32,7 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         super().__init__(OrganLookup, "popv_prediction")
 
     def do_run(self, matrix: Path, organ: str, options: PopvOptions):
+        """Annotate data using popv."""
         data = scanpy.read_h5ad(matrix)
         data = self.prepare_query(data, organ, options)
         popv.annotation.annotate_data(
@@ -55,6 +55,16 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
     def prepare_query(
         self, data: scanpy.AnnData, organ: str, options: PopvOptions
     ) -> scanpy.AnnData:
+        """Prepares the data to be annotated by popv.
+
+        Args:
+            data (scanpy.AnnData): Unprepared data
+            organ (str): Organ name
+            options (PopvOptions): Additional options
+
+        Returns:
+            scanpy.AnnData: Prepared data
+        """
         reference_data_path = self.find_reference_data(
             options["reference_data_dir"], organ
         )
@@ -96,6 +106,15 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
     def get_n_samples_per_label(
         self, reference_data: scanpy.AnnData, options: PopvOptions
     ) -> int:
+        """Computes the number of samples by label in the reference data.
+
+        Args:
+            reference_data (scanpy.AnnData): Reference data
+            options (PopvOptions): Additional options
+
+        Returns:
+            int: Number of samples per label
+        """
         ref_labels_key = options["ref_labels_key"]
         n_samples_per_label = options["samples_per_label"]
         if ref_labels_key in reference_data.obs.columns:
@@ -104,6 +123,19 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         return n_samples_per_label
 
     def find_reference_data(self, dir: Path, organ: str) -> Path:
+        """Finds the reference data directory for an organ.
+
+        Args:
+            dir (Path): Directory to search
+            organ (str): Organ name
+
+        Raises:
+            ValueError: If no reference data could be found
+
+        Returns:
+            Path: The data directory
+        """
+
         def is_reference_data_candidate(path: Path):
             return (
                 path.is_file()
@@ -119,6 +151,19 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         )
 
     def find_model_dir(self, dir: Path, organ: str) -> Path:
+        """Find the model data directory for an organ.
+
+        Args:
+            dir (Path): Directory to search
+            organ (str): Organ name
+
+        Raises:
+            ValueError: If no model data could be found
+
+        Returns:
+            Path: The data directory
+        """
+
         def is_model_candidate(path: Path):
             return path.is_dir() and organ.lower() in path.name.lower()
 
@@ -131,7 +176,23 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
 
     def _find_in_dir(
         self, dir: Path, cond: t.Callable[[Path], bool], error_msg: str, warn_msg: str
-    ):
+    ) -> Path:
+        """Search a directory for a entry which passes the provided test.
+
+        Args:
+            dir (Path): Directory to search
+            cond (t.Callable[[Path], bool]): Test used to match sub entries
+            error_msg (str): Error message used when no entries match
+            warn_msg (str): Warning message use when multiple entries match
+
+        Raises:
+            ValueError: If there are no matching sub entries
+
+        Returns:
+            Path:
+                The matching entry.
+                If multiple entries match the one with the shortest name is returned.
+        """
         candidates = list(filter(cond, dir.iterdir()))
         candidates.sort(key=lambda path: len(path.name))
 
@@ -144,6 +205,15 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
     def normalize_var_names(
         self, data: scanpy.AnnData, options: PopvOptions
     ) -> scanpy.AnnData:
+        """Normalizes variable names, replacing ensemble ids with the corresponding gene name.
+
+        Args:
+            data (scanpy.AnnData): Data with potentially non-normalized names
+            options (PopvOptions): Options containing the ensemble id mapping file path
+
+        Returns:
+            scanpy.AnnData: The normalized data
+        """
         lookup = self.load_ensemble_lookup(options)
         names = data.var_names
 
@@ -155,6 +225,14 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         return data
 
     def load_ensemble_lookup(self, options: PopvOptions):
+        """Load a file mapping ensemble id to gene names.
+
+        Args:
+            options (PopvOptions): Options with the mapping file path
+
+        Returns:
+            t.Dict[str, str]: Loaded mapping
+        """
         with open(options["ensemble_lookup"]) as file:
             reader = csv.DictReader(file)
             lookup: t.Dict[str, str] = {}
@@ -166,9 +244,20 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         self,
         data: scanpy.AnnData,
         model_path: Path,
-        query_layers_key: str,
+        query_layers_key: t.Optional[str],
     ) -> scanpy.AnnData:
-        """Adds genes from model not present in input data to input data. Needed for preprocessing bug"""
+        """Adds genes from model not present in input data to input data.
+
+        Solves a preprocessing bug.
+
+        Args:
+            data (scanpy.AnnData): Data to fix
+            model_path (Path): Model data directory
+            query_layers_key (str, optional): Data layer to fix
+
+        Returns:
+            scanpy.AnnData: The fixed data
+        """
         model_genes = torch.load(
             Path.joinpath(model_path, "scvi/model.pt"), map_location="cpu"
         )["var_names"]

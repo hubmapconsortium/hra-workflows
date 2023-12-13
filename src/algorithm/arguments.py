@@ -6,6 +6,14 @@ from pathlib import Path
 def add_common_arguments(
     parser: t.Optional[argparse.ArgumentParser] = None,
 ) -> argparse.ArgumentParser:
+    """Add arguments common to all algorithms.
+
+    Args:
+        parser (argparse.ArgumentParser, optional): An existing parser to add argument to. Defaults to None.
+
+    Returns:
+        argparse.ArgumentParser: A parser with common arguments added
+    """
     if parser is None:
         parser = argparse.ArgumentParser(description="Compute annotations")
 
