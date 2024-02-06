@@ -1,6 +1,8 @@
 import argparse
+import csv
 import re
 from pathlib import Path
+import typing as t
 
 import anndata
 import pandas as pd
@@ -124,6 +126,22 @@ def _get_empty_table(args: argparse.Namespace) -> pd.DataFrame:
     )
 
 
+def _read_table(path: str) -> t.Optional[pd.DataFrame]:
+    """Read a crosswalking table. Metadata rows before the header are skipped.
+
+    Args:
+        path (str): Path to the csv file
+
+    Returns:
+        pd.DataFrame: A data frame with the table data
+    """
+    with open(path) as file:
+        for row in csv.reader(file):
+            if row[0].lower() == 'organ_level':
+                return pd.read_csv(file, names=row)
+    return None
+
+
 def main(args: argparse.Namespace):
     """Crosswalks a h5ad file and saves the result to another h5ad file.
 
@@ -155,7 +173,7 @@ def _get_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("matrix", type=anndata.read_h5ad, help="h5ad data file")
     parser.add_argument(
         "--crosswalk-table",
-        type=pd.read_csv,
+        type=_read_table,
         help="crosswalking csv file path",
     )
     parser.add_argument(
