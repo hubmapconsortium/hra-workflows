@@ -90,10 +90,15 @@ class Algorithm(t.Generic[OrganMetadata, Options], abc.ABC):
 
         Returns:
             OrganMetadata: Organ specific metadata
+
+        Raises:
+            ValueError: If the organ is not supported by the algorithm
         """
         with open(organ_metadata) as file:
-            data = json.load(file)
-        return data[organ]
+            metadata = json.load(file)
+        if organ not in metadata:
+            raise ValueError(f"Organ {organ} is not supported")
+        return metadata[organ]
 
     def __post_process_result(
         self, result: RunResult, organ: str, metadata: OrganMetadata
