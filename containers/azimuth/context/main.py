@@ -1,4 +1,3 @@
-import json
 import logging
 import subprocess
 import typing as t
@@ -7,24 +6,31 @@ from pathlib import Path
 import anndata
 import pandas
 
-from src.algorithm import Algorithm, OrganLookup, add_common_arguments
+from src.algorithm import Algorithm, RunResult, add_common_arguments
+
+
+class AzimuthOrganMetadata(t.TypedDict):
+    model: str
+    organ_level: str
+    prediction_column: str
 
 
 class AzimuthOptions(t.TypedDict):
     reference_data_dir: Path
-    annotation_levels: Path
 
 
-class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
-    def __init__(self):
-        super().__init__(OrganLookup)
-
-    def do_run(self, matrix: Path, organ: str, options: AzimuthOptions):
+class AzimuthAlgorithm(Algorithm[AzimuthOrganMetadata, AzimuthOptions]):
+    def do_run(
+        self,
+        matrix: Path,
+        organ: str,
+        metadata: AzimuthOrganMetadata,
+        options: AzimuthOptions,
+    ) -> RunResult:
         """Annotate data using azimuth."""
         data = anndata.read_h5ad(matrix)
-        reference_data = self.find_reference_data(organ, options["reference_data_dir"])
-        annotation_level = self.find_annotation_level(
-            organ, options["annotation_levels"]
+        reference_data = self.find_reference_data(
+            organ, metadata["model"], options["reference_data_dir"]
         )
 
         # Azimuth chokes when trying to load matrices that has
@@ -41,7 +47,11 @@ class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
         annotated_matrix = anndata.read_h5ad(annotated_matrix_path)
         self.copy_annotations(data, annotated_matrix)
 
-        return data, annotation_level
+        return {
+            "data": data,
+            "organ_level": metadata["organ_level"],
+            "prediction_column": "predicted." + metadata["prediction_column"],
+        }
 
     def create_clean_matrix(self, matrix: anndata.AnnData) -> anndata.AnnData:
         """Creates a copy of the data with all observation columns removed.
@@ -73,7 +83,7 @@ class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
 
         Args:
             matrix_path (Path): Path to data file
-            reference_data (Path): Path to organ reference data directory
+            reference_data (Path): Path to model reference data directory
 
         Returns:
             str: Path to the output data file
@@ -82,11 +92,12 @@ class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
         subprocess.run(script_command, capture_output=True, check=True, text=True)
         return "./result.h5ad"
 
-    def find_reference_data(self, organ: str, dir: Path) -> Path:
-        """Finds the reference data directory for an organ.
+    def find_reference_data(self, organ: str, model: str, dir: Path) -> Path:
+        """Finds the reference data directory for a model.
 
         Args:
-            organ (str): Organ name
+            organ (str): Organ id
+            model (str): Model name
             dir (Path): Directory to search
 
         Raises:
@@ -97,7 +108,7 @@ class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
         """
 
         def is_reference_data_candidate(path: Path):
-            return path.is_dir() and organ.lower() in path.name.lower()
+            return path.is_dir() and model.lower() in path.name.lower()
 
         subdir = self._find_in_dir(
             dir,
@@ -107,20 +118,6 @@ class AzimuthAlgorithm(Algorithm[str, AzimuthOptions]):
         )
         # idx.annoy and ref.Rds is always located inside an 'azimuth' subdirectory
         return subdir / "azimuth"
-
-    def find_annotation_level(self, organ: str, path: Path) -> str:
-        """Finds the column name which contains the predictions.
-
-        Args:
-            organ (str): Organ name
-            path (Path): Path to file containing information about column names
-
-        Returns:
-            str: Column name
-        """
-        with open(path) as file:
-            levels_by_organ = json.load(file)
-        return "predicted." + levels_by_organ[organ]
 
     def _find_in_dir(
         self, dir: Path, cond: t.Callable[[Path], bool], error_msg: str, warn_msg: str
@@ -158,12 +155,6 @@ def _get_arg_parser():
         type=Path,
         required=True,
         help="Path to directory with reference data",
-    )
-    parser.add_argument(
-        "--annotation-levels",
-        type=Path,
-        default="/annotation-levels.json",
-        help="Json file with organ to annotation levels",
     )
 
     return parser

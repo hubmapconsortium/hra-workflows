@@ -8,8 +8,15 @@ import anndata
 import pandas as pd
 
 
-def filter_crosswalk_table(table: pd.DataFrame, *columns: str) -> pd.DataFrame:
-    """Filter the crosswalk table to only include specified columns.
+def filter_crosswalk_table(
+    table: pd.DataFrame,
+    organ_id: str,
+    organ_level: str,
+    organ_id_column: str,
+    organ_level_column: str,
+    table_label_column: str,
+) -> pd.DataFrame:
+    """Filter the crosswalk table to only include rows with organ id and level.
 
     Also removes empty rows and cast values to string.
 
@@ -19,7 +26,12 @@ def filter_crosswalk_table(table: pd.DataFrame, *columns: str) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Filtered table
     """
-    return table[list(columns)].dropna().astype(str).drop_duplicates()
+    organ_id_rows = table[organ_id_column].str.lower() == organ_id.lower()
+    organ_level_rows = table[organ_level_column].str.lower() == organ_level.lower()
+    filtered_table = table[organ_id_rows & organ_level_rows]
+    normalized_table = filtered_table.dropna().astype(str)
+    unique_table = normalized_table.drop_duplicates(table_label_column)
+    return unique_table
 
 
 def generate_iri(label: str) -> str:
@@ -39,10 +51,14 @@ def generate_iri(label: str) -> str:
 
 def crosswalk(
     matrix: anndata.AnnData,
+    organ_id: str,
+    organ_level: str,
     data_label_column: str,
     data_clid_column: str,
     data_match_column: str,
     table: pd.DataFrame,
+    table_organ_id_column: str,
+    table_organ_level_column: str,
     table_label_column: str,
     table_clid_column: str,
     table_match_column: str,
@@ -67,7 +83,12 @@ def crosswalk(
         table_match_column: data_match_column,
     }
     table = filter_crosswalk_table(
-        table, table_label_column, table_clid_column, table_match_column
+        table,
+        organ_id,
+        organ_level,
+        table_organ_id_column,
+        table_organ_level_column,
+        table_label_column,
     )
     merged_obs = (
         matrix.obs.merge(
@@ -119,6 +140,8 @@ def _get_empty_table(args: argparse.Namespace) -> pd.DataFrame:
     """
     return pd.DataFrame(
         columns=[
+            args.crosswalk_table_organ_id_column,
+            args.crosswalk_table_organ_level_column,
             args.crosswalk_table_label_column,
             args.crosswalk_table_clid_column,
             args.crosswalk_table_match_column,
@@ -137,7 +160,7 @@ def _read_table(path: str) -> t.Optional[pd.DataFrame]:
     """
     with open(path) as file:
         for row in csv.reader(file):
-            if row[0].lower() == 'organ_level':
+            if row[0].lower() == "organ_level":
                 return pd.read_csv(file, names=row)
     return None
 
@@ -149,18 +172,26 @@ def main(args: argparse.Namespace):
         args (argparse.Namespace):
             CLI arguments, must contain "matrix",
             "annotation_column", "clid_column", "match_column",
-            "crosswalk_table", "crosswalk_table_label_column",
+            "crosswalk_table", "crosswalk_table_organ_id_column",
+            "crosswalk_table_organ_level_column", "crosswalk_table_label_column",
             "crosswalk_table_clid_column", "crosswalk_table_match_column", and
             "output_matrix"
     """
+    metadata = args.matrix.uns["hra_crosswalking"]
     matrix = crosswalk(
         args.matrix,
+        metadata["organ_id"],
+        metadata["organ_level"],
         args.annotation_column,
         args.clid_column,
         args.match_column,
-        args.crosswalk_table
-        if args.crosswalk_table is not None
-        else _get_empty_table(args),
+        (
+            args.crosswalk_table
+            if args.crosswalk_table is not None
+            else _get_empty_table(args)
+        ),
+        args.crosswalk_table_organ_id_column,
+        args.crosswalk_table_organ_level_column,
         args.crosswalk_table_label_column,
         args.crosswalk_table_clid_column,
         args.crosswalk_table_match_column,
@@ -172,26 +203,6 @@ def _get_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Add crosswalking to h5ad data")
     parser.add_argument("matrix", type=anndata.read_h5ad, help="h5ad data file")
     parser.add_argument(
-        "--crosswalk-table",
-        type=_read_table,
-        help="crosswalking csv file path",
-    )
-    parser.add_argument(
-        "--crosswalk-table-label-column",
-        default="label",
-        help="Column with Azimuth label in crosswalking table",
-    )
-    parser.add_argument(
-        "--crosswalk-table-clid-column",
-        default="clid",
-        help="Column with CL ID in crosswalking table",
-    )
-    parser.add_argument(
-        "--crosswalk-table-match-column",
-        default="match",
-        help="Column with match type in crosswalking table",
-    )
-    parser.add_argument(
         "--annotation-column", default="hra_prediction", help="Column with annotations"
     )
     parser.add_argument(
@@ -199,6 +210,36 @@ def _get_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--match-column", default="match_type", help="Output column for match"
+    )
+    parser.add_argument(
+        "--crosswalk-table",
+        type=_read_table,
+        help="crosswalking csv file path",
+    )
+    parser.add_argument(
+        "--crosswalk-table-organ-id-column",
+        default="Organ_ID",
+        help="Column with organ ids in crosswalking table",
+    )
+    parser.add_argument(
+        "--crosswalk-table-organ-level-column",
+        default="Organ_Level",
+        help="Column with organ levels in crosswalking table",
+    )
+    parser.add_argument(
+        "--crosswalk-table-label-column",
+        default="Annotation_Label",
+        help="Column with label in crosswalking table",
+    )
+    parser.add_argument(
+        "--crosswalk-table-clid-column",
+        default="CL_ID",
+        help="Column with CL ID in crosswalking table",
+    )
+    parser.add_argument(
+        "--crosswalk-table-match-column",
+        default="CL_Match",
+        help="Column with match type in crosswalking table",
     )
     parser.add_argument(
         "--output-matrix",

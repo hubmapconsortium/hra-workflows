@@ -9,7 +9,12 @@ import popv
 import scanpy
 import torch
 
-from src.algorithm import Algorithm, OrganLookup, add_common_arguments
+from src.algorithm import Algorithm, RunResult, add_common_arguments
+
+
+class PopvOrganMetadata(t.TypedDict):
+    model: str
+    organ_level: str
 
 
 class PopvOptions(t.TypedDict):
@@ -27,48 +32,55 @@ class PopvOptions(t.TypedDict):
     ensemble_lookup: Path
 
 
-class PopvAlgorithm(Algorithm[str, PopvOptions]):
+class PopvAlgorithm(Algorithm[PopvOrganMetadata, PopvOptions]):
     def __init__(self):
-        super().__init__(OrganLookup, "popv_prediction")
+        super().__init__("popv_prediction")
 
-    def do_run(self, matrix: Path, organ: str, options: PopvOptions):
+    def do_run(
+        self,
+        matrix: Path,
+        organ: str,
+        metadata: PopvOrganMetadata,
+        options: PopvOptions,
+    ) -> RunResult:
         """Annotate data using popv."""
         data = scanpy.read_h5ad(matrix)
-        data = self.prepare_query(data, organ, options)
+        data = self.prepare_query(data, organ, metadata["model"], options)
         popv.annotation.annotate_data(
             data,
             # TODO: onclass has been removed due to error in fast mode
             # seen_result_key is not added to the result in fast mode but still expected during compute_consensus
             # https://github.com/YosefLab/PopV/blob/main/popv/annotation.py#L64
             # https://github.com/YosefLab/PopV/blob/main/popv/algorithms/_onclass.py#L199
-            # methods=["knn_on_scvi", "scanvi", "svm", "rf", "celltypist"],
+            # Also excludes celltypist since web requests are not available inside the docker container
             methods=[
                 "knn_on_scvi",
                 "scanvi",
                 "svm",
                 "rf",
-            ],  # excludes celltypist for some HTTPS bug
+            ],
         )
 
-        return data
+        return {"data": data, "organ_level": metadata["organ_level"]}
 
     def prepare_query(
-        self, data: scanpy.AnnData, organ: str, options: PopvOptions
+        self, data: scanpy.AnnData, organ: str, model: str, options: PopvOptions
     ) -> scanpy.AnnData:
         """Prepares the data to be annotated by popv.
 
         Args:
             data (scanpy.AnnData): Unprepared data
             organ (str): Organ name
+            model (str): Model name
             options (PopvOptions): Additional options
 
         Returns:
             scanpy.AnnData: Prepared data
         """
         reference_data_path = self.find_reference_data(
-            options["reference_data_dir"], organ
+            options["reference_data_dir"], organ, model
         )
-        model_path = self.find_model_dir(options["models_dir"], organ)
+        model_path = self.find_model_dir(options["models_dir"], organ, model)
         reference_data = scanpy.read_h5ad(reference_data_path)
         n_samples_per_label = self.get_n_samples_per_label(reference_data, options)
         data = self.normalize_var_names(data, options)
@@ -122,12 +134,13 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
             n_samples_per_label = numpy.max((n_samples_per_label, t.cast(int, n)))
         return n_samples_per_label
 
-    def find_reference_data(self, dir: Path, organ: str) -> Path:
+    def find_reference_data(self, dir: Path, organ: str, model: str) -> Path:
         """Finds the reference data directory for an organ.
 
         Args:
             dir (Path): Directory to search
             organ (str): Organ name
+            model (str): Model name
 
         Raises:
             ValueError: If no reference data could be found
@@ -140,7 +153,7 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
             return (
                 path.is_file()
                 and path.suffix == ".h5ad"
-                and organ.lower() in path.stem.lower()
+                and model.lower() in path.stem.lower()
             )
 
         return self._find_in_dir(
@@ -150,12 +163,13 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
             f"Multiple reference data candidates for organ '{organ}'",
         )
 
-    def find_model_dir(self, dir: Path, organ: str) -> Path:
+    def find_model_dir(self, dir: Path, organ: str, model: str) -> Path:
         """Find the model data directory for an organ.
 
         Args:
             dir (Path): Directory to search
             organ (str): Organ name
+            model (str): Model name
 
         Raises:
             ValueError: If no model data could be found
@@ -165,7 +179,7 @@ class PopvAlgorithm(Algorithm[str, PopvOptions]):
         """
 
         def is_model_candidate(path: Path):
-            return path.is_dir() and organ.lower() in path.name.lower()
+            return path.is_dir() and model.lower() in path.name.lower()
 
         return self._find_in_dir(
             dir,

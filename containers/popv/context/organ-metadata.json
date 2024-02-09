@@ -1,0 +1,98 @@
+{
+  "UBERON:0001255": {
+    "model": "Bladder",
+    "organ_level": "urinary bladder"
+  },
+  "UBERON:0000178": {
+    "model": "Blood",
+    "organ_level": "blood"
+  },
+  "UBERON:0002371": {
+    "model": "Bone_Marrow",
+    "organ_level": "bone marrow"
+  },
+  "UBERON:0000970": {
+    "model": "Eye",
+    "organ_level": "eye"
+  },
+  "UBERON:0004548": {
+    "model": "Eye",
+    "organ_level": "eye"
+  },
+  "UBERON:0004549": {
+    "model": "Eye",
+    "organ_level": "eye"
+  },
+  "UBERON:0000948": {
+    "model": "Heart",
+    "organ_level": "heart"
+  },
+  "UBERON:0000059": {
+    "model": "Large_Intestine",
+    "organ_level": "large intestine"
+  },
+  "UBERON:0002107": {
+    "model": "Liver",
+    "organ_level": "liver"
+  },
+  "UBERON:0002048": {
+    "model": "Lung",
+    "organ_level": "lung"
+  },
+  "UBERON:0001004": {
+    "model": "Lung",
+    "organ_level": "respiratory system"
+  },
+  "UBERON:0000029": {
+    "model": "Lymph_Node",
+    "organ_level": "lymph node"
+  },
+  "UBERON:0002509": {
+    "model": "Lymph_Node",
+    "organ_level": "mesenteric lymph node"
+  },
+  "UBERON:0001911": {
+    "model": "Mammary",
+    "organ_level": "mammary gland"
+  },
+  "UBERON:0001264": {
+    "model": "Pancreas",
+    "organ_level": "pancreas"
+  },
+  "UBERON:0002367": {
+    "model": "Prostate",
+    "organ_level": "prostate gland"
+  },
+  "UBERON:0000079": {
+    "model": "Prostate",
+    "organ_level": "male reproductive system"
+  },
+  "UBERON:0002097": {
+    "model": "Skin",
+    "organ_level": "skin"
+  },
+  "UBERON:0002108": {
+    "model": "Small_Intestine",
+    "organ_level": "small intestine"
+  },
+  "UBERON:0002106": {
+    "model": "Spleen",
+    "organ_level": "spleen"
+  },
+  "UBERON:0002370": {
+    "model": "Thymus",
+    "organ_level": "thymus"
+  },
+  "UBERON:0003126": {
+    "model": "Trachea",
+    "organ_level": "trachea"
+  },
+  "UBERON:0000995": {
+    "model": "Uterus",
+    "organ_level": "uterus"
+  },
+  "UBERON:0004537": {
+    "model": "Vasculature",
+    "organ_level": "blood vasculature"
+  }
+}

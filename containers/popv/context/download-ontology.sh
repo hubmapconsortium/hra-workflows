@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ONTOLOGY_DIR=./ontology
-ONTOLOGY_DIR_URL=https://raw.githubusercontent.com/YosefLab/PopV/main/ontology
+ONTOLOGY_DIR_URL=https://raw.githubusercontent.com/YosefLab/PopV/main/resources/ontology
 
 mkdir -p $ONTOLOGY_DIR
 cd $ONTOLOGY_DIR

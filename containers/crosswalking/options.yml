@@ -7,9 +7,19 @@ fields:
     label: Crosswalk CSV file
     inputBinding:
       prefix: --crosswalk-table
+  tableOrganIdColumn:
+    type: string?
+    label: Organ id column in crosswalk table
+    inputBinding:
+      prefix: --crosswalk-table-organ-id-column
+  tableOrganLevelColumn:
+    type: string?
+    label: Organ level column in crosswalk table
+    inputBinding:
+      prefix: --crosswalk-table-organ-level-column
   tableLabelColumn:
     type: string?
-    label: Azimuth label column in crosswalk table
+    label: Label column in crosswalk table
     inputBinding:
       prefix: --crosswalk-table-label-column
   tableClidColumn:

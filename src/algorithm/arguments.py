@@ -20,10 +20,10 @@ def add_common_arguments(
     parser.add_argument("matrix", type=Path, help="h5ad data file")
     parser.add_argument("--organ", required=True, help="Organ uberon id")
     parser.add_argument(
-        "--organ-mapping",
+        "--organ-metadata",
         type=Path,
-        default="/organ-mapping.json",
-        help="Organ mapping file",
+        default="/organ-metadata.json",
+        help="Organ metadata file",
     )
     parser.add_argument(
         "--output-matrix",

@@ -16,6 +16,6 @@ outputs:
 
 expression: |
   ${
-    var isSuccess = /success/g.test(inputs.report.contents);
+    var isSuccess = /"status": "success"/g.test(inputs.report.contents);
     return { matrix_or_null: isSuccess ? inputs.matrix : null };
   }

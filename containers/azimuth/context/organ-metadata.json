@@ -1,0 +1,62 @@
+{
+  "UBERON:0002113": {
+    "model": "kidneyref",
+    "organ_level": "Kidney_L3",
+    "prediction_column": "annotation.l3"
+  },
+  "UBERON:0004538": {
+    "model": "kidneyref",
+    "organ_level": "Kidney_L3",
+    "prediction_column": "annotation.l3"
+  },
+  "UBERON:0004539": {
+    "model": "kidneyref",
+    "organ_level": "Kidney_L3",
+    "prediction_column": "annotation.l3"
+  },
+  "UBERON:0002048": {
+    "model": "lungref",
+    "organ_level": "Lung_v2_finest_level",
+    "prediction_column": "ann_finest_level"
+  },
+  "UBERON:0001004": {
+    "model": "lungref",
+    "organ_level": "Lung_v2_finest_level",
+    "prediction_column": "ann_finest_level"
+  },
+  "UBERON:0000948": {
+    "model": "heartref",
+    "organ_level": "Heart_L2",
+    "prediction_column": "celltype.l2"
+  },
+  "UBERON:0000955": {
+    "model": "humancortexref",
+    "organ_level": "",
+    "prediction_column": "subclass"
+  },
+  "UBERON:0001264": {
+    "model": "pancreasref",
+    "organ_level": "Pancreas_L1",
+    "prediction_column": "annotation.l1"
+  },
+  "UBERON:0002373": {
+    "model": "tonsilref",
+    "organ_level": "",
+    "prediction_column": "celltype.l2"
+  },
+  "UBERON:0000178": {
+    "model": "pbmcref",
+    "organ_level": "Human_PBMC_L2",
+    "prediction_column": "celltype.l2"
+  },
+  "UBERON:0002371": {
+    "model": "bonemarrowref",
+    "organ_level": "Bone_marrow_L2",
+    "prediction_column": "celltype.l2"
+  },
+  "UBERON:0001013": {
+    "model": "adiposeref",
+    "organ_level": "",
+    "prediction_column": "celltype.l2"
+  }
+}

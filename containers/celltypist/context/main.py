@@ -7,39 +7,38 @@ import celltypist
 import pandas
 import scanpy
 
-from src.algorithm import Algorithm, OrganLookup, add_common_arguments
+from src.algorithm import Algorithm, RunResult, add_common_arguments
+
+
+class CelltypistOrganMetadata(t.TypedDict):
+    model: str
 
 
 class CelltypistOptions(t.TypedDict):
     ensemble_lookup: Path
 
 
-class CelltypistOrganLookup(OrganLookup[celltypist.Model]):
-    def __init__(self, mapping_file: Path):
-        super().__init__(mapping_file)
-
-    def get_builtin_options(self):
-        """Get builtin celltypist models."""
-        models = celltypist.models.get_all_models()
-        return map(lambda model: (model, self.from_raw(model)), models)
-
-    def from_raw(self, id: str):
-        """Load a celltypist model."""
-        return celltypist.models.Model.load(id)
-
-
-class CelltypistAlgorithm(Algorithm[celltypist.Model, CelltypistOptions]):
+class CelltypistAlgorithm(Algorithm[CelltypistOrganMetadata, CelltypistOptions]):
     def __init__(self):
-        super().__init__(CelltypistOrganLookup, "predicted_labels")
+        super().__init__("predicted_labels")
 
-    def do_run(self, matrix: Path, organ: celltypist.Model, options: CelltypistOptions):
+    def do_run(
+        self,
+        matrix: Path,
+        organ: str,
+        metadata: CelltypistOrganMetadata,
+        options: CelltypistOptions,
+    ) -> RunResult:
         """Annotate data using celltypist."""
         data = scanpy.read_h5ad(matrix)
         data = self.normalize(data)
         data, var_names = self.normalize_var_names(data, options)
-        data = celltypist.annotate(data, organ, majority_voting=True).to_adata()
+        data = celltypist.annotate(
+            data, metadata["model"], majority_voting=True
+        ).to_adata()
         data.var_names = t.cast(t.Any, var_names)
-        return data
+
+        return {"data": data, "organ_level": metadata["model"].replace(".", "_")}
 
     def normalize(self, data: scanpy.AnnData) -> scanpy.AnnData:
         """Normalizes data according to celltypist requirements.

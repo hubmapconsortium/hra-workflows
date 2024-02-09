@@ -1,9 +1,0 @@
-{
-  "kidneyref": "annotation.l3",
-  "lungref": "ann_finest_level",
-  "heartref": "celltype.l2",
-  "humancortexref": "subclass",
-  "pancreasref": "annotation.l1",
-  "tonsilref": "celltype.l2",
-  "pbmcref": "celltype.l2"
-}

@@ -1,0 +1,23 @@
+{
+  "UBERON:0002048": {
+    "model": "Human_Lung_Atlas.pkl"
+  },
+  "UBERON:0001004": {
+    "model": "Human_Lung_Atlas.pkl"
+  },
+  "UBERON:0002097": {
+    "model": "Adult_Human_Skin.pkl"
+  },
+  "UBERON:0001264": {
+    "model": "Adult_Human_PancreaticIslet.pkl"
+  },
+  "UBERON:0000948": {
+    "model": "Healthy_Adult_Heart.pkl"
+  },
+  "UBERON:0002107": {
+    "model": "Healthy_Human_Liver.pkl"
+  },
+  "UBERON:0000955": {
+    "model": "Human_AdultAged_Hippocampus.pkl"
+  }
+}
