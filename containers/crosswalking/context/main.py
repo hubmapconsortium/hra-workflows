@@ -104,6 +104,8 @@ def crosswalk(
 
     result = matrix.copy()
     result.obs = merged_obs
+    _fix_obs_columns_dtype(result)
+
     return result
 
 
@@ -127,6 +129,18 @@ def _set_default_match(obs: pd.DataFrame, column: str) -> None:
         column (str): Column to check and update with default match type
     """
     obs.loc[obs[column].isna(), column] = "skos:exactMatch"
+
+
+def _fix_obs_columns_dtype(matrix: anndata.AnnData):
+    """Converts object and category columns to string to prevent errors when writing h5ad file.
+
+    Args:
+      matrix (AnnData): Matrix to update
+    """
+    for column in matrix.obs.columns:
+        array = matrix.obs[column]
+        if array.dtype in ("category", "object"):
+            matrix.obs[column] = array.astype(str)
 
 
 def _get_empty_table(args: argparse.Namespace) -> pd.DataFrame:
