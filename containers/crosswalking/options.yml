@@ -2,6 +2,21 @@ type: record
 name: options
 label: crosswalking options
 fields:
+  annotationColumn:
+    type: string?
+    label: Annotation column
+    inputBinding:
+      prefix: --annotation-column
+  clidColumn:
+    type: string?
+    label: Output clid column name
+    inputBinding:
+      prefix: --clid-column
+  matchColumn:
+    type: string?
+    label: Output match type column name
+    inputBinding:
+      prefix: --match-column
   table:
     type: File?
     label: Crosswalk CSV file
@@ -27,23 +42,13 @@ fields:
     label: CL ID column in crosswalk table
     inputBinding:
       prefix: --crosswalk-table-clid-column
+  tableClidLabelColumn:
+    type: string?
+    label: CL label column in crosswalk table
+    inputBinding::
+      prefix: --crosswalk-table-clid-label-column
   tableMatchColumn:
     type: string?
     label: Match type column in crosswalk table
     inputBinding:
       prefix: --crosswalk-table-match-column
-  annotationColumn:
-    type: string?
-    label: Annotation column
-    inputBinding:
-      prefix: --annotation-column
-  clidColumn:
-    type: string?
-    label: Output clid column name
-    inputBinding:
-      prefix: --clid-column
-  matchColumn:
-    type: string?
-    label: Output match type column name
-    inputBinding:
-      prefix: --match-column

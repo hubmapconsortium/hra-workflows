@@ -12,3 +12,7 @@ fields:
     label: Gene expression column
     inputBinding:
       prefix: --gene-expr-column
+  ensembleLookup:
+    type: File?
+    inputBinding:
+      prefix: --ensemble-lookup

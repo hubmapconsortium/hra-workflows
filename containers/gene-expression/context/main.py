@@ -8,6 +8,9 @@ import numpy as np
 import pandas as pd
 import scanpy as sc
 
+from src.util.ensemble import add_ensemble_data
+
+
 MIN_CELLS_PER_CT = 2  # need a filter to reomve CTs with one cell as sc.tl.rank_genes_groups gives an error
 
 
@@ -67,12 +70,17 @@ def get_mean_expr_value(
 
 
 def get_marker_genes_with_expr(
-    matrix: anndata.AnnData, clid_column: str, cell_type: str, marker_genes: str
+    matrix: anndata.AnnData,
+    gene_data: pd.DataFrame,
+    clid_column: str,
+    cell_type: str,
+    marker_genes: str,
 ) -> t.List[dict]:
     """Get the mean expression for all marker genes.
 
     Args:
         matrix (anndata.AnnData): Data
+        gene_data (pd.DataFrame): Data frame with additional gene data indexed by gene
         clid_column (str): Cell type id column
         cell_type (str): Cell type name
         gene (str): Gene name
@@ -82,9 +90,12 @@ def get_marker_genes_with_expr(
     """
     output = []
     for gene in marker_genes:
+        data = gene_data.loc[gene]
         output.append(
             {
-                "gene_label": gene,
+                "gene_id": data["hgnc"],
+                "gene_label": data["gene_name"],
+                "ensembl_id": gene,
                 "mean_gene_expr_value": get_mean_expr_value(
                     matrix, clid_column, cell_type, gene
                 ),
@@ -94,12 +105,13 @@ def get_marker_genes_with_expr(
 
 
 def get_gene_expr(
-    matrix: anndata.AnnData, clid_column: str, gene_expr_column: str
+    matrix: anndata.AnnData, ensemble: Path, clid_column: str, gene_expr_column: str
 ) -> anndata.AnnData:
     """Computes and adds gene mean expressions for all cells in the annotated data.
 
     Args:
         matrix (anndata.AnnData): Data
+        ensemble (Path): Ensemble lookup data path
         clid_column (str): Cell type id column
         gene_expr_column (str): Column to store gene expression on
 
@@ -108,6 +120,7 @@ def get_gene_expr(
     """
     matrix.raw = matrix  # for getting gene names as output for sc.tl.rank_genes_groups
     filtered_matrix = filter_matrix(matrix, clid_column)
+    filtered_matrix = add_ensemble_data(filtered_matrix, ensemble)
     sc.tl.rank_genes_groups(filtered_matrix, groupby=clid_column, n_genes=10)
     ct_marker_genes_df = format_marker_genes_df(
         pd.DataFrame(filtered_matrix.uns["rank_genes_groups"]["names"]),
@@ -116,7 +129,11 @@ def get_gene_expr(
 
     ct_marker_genes_df[gene_expr_column] = ct_marker_genes_df.apply(
         lambda row: get_marker_genes_with_expr(
-            matrix, clid_column, row[clid_column], row["marker_genes"]
+            matrix,
+            filtered_matrix.var,
+            clid_column,
+            row[clid_column],
+            row["marker_genes"],
         ),
         axis=1,
     )
@@ -139,13 +156,20 @@ def main(args: argparse.Namespace):
             CLI arguments, must contain "matrix", "clid_column",
             "gene_expr_column", and "output_matrix"
     """
-    matrix = get_gene_expr(args.matrix, args.clid_column, args.gene_expr_column)
+    matrix = get_gene_expr(
+        args.matrix, args.ensemble_lookup, args.clid_column, args.gene_expr_column
+    )
     matrix.write_h5ad(args.output_matrix)
 
 
 def _get_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Add gene expressions to h5ad data")
     parser.add_argument("matrix", type=anndata.read_h5ad, help="h5ad data file")
+    parser.add_argument(
+        "--ensemble-lookup",
+        default="/src/assets/ensemble-lookup.csv",
+        help="Ensemble lookup data csv",
+    )
     parser.add_argument("--clid-column", default="clid", help="Column with cell id")
     parser.add_argument(
         "--gene-expr-column", default="gene_expr", help="Column for gene_expr"
