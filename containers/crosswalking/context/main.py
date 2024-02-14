@@ -61,18 +61,24 @@ def crosswalk(
     table_organ_level_column: str,
     table_label_column: str,
     table_clid_column: str,
+    table_clid_label_column: str,
     table_match_column: str,
 ) -> anndata.AnnData:
     """Crosswalks the data adding CLIDs and match types using a crosswalk table.
 
     Args:
         matrix (anndata.AnnData): Data to crosswalk
+        organ_id (str): Organ id
+        organ_label (str): Organ level
         data_label_column (str): Column used to match against the table
         data_clid_column (str): Column to store CLIDs in
         data_match_column (str): Column to store match type in
         table (pd.DataFrame): Crosswalk table
+        table_organ_id_column (str): Column storing organ uberon ids
+        table_organ_lavel_column (str): Column storing organ levels
         table_label_column (str): Column used to match against the data
         table_clid_column (str): Column storing CLIDs
+        table_clid_column (str): Column storing CL labels
         table_match_column (str): Column storing match type
 
     Returns:
@@ -101,6 +107,7 @@ def crosswalk(
 
     _set_default_clid(merged_obs, data_clid_column, data_label_column)
     _set_default_match(merged_obs, data_match_column)
+    _set_default_clid(merged_obs, table_clid_label_column, data_label_column)
 
     result = matrix.copy()
     result.obs = merged_obs
@@ -119,6 +126,17 @@ def _set_default_clid(obs: pd.DataFrame, clid_column: str, label_column: str) ->
     """
     defaults = obs.apply(lambda row: generate_iri(row[label_column]), axis=1)
     obs.loc[obs[clid_column].isna(), clid_column] = defaults
+
+
+def _set_default_clid(obs: pd.DataFrame, clid_label_column: str, label_column: str) -> None:
+    """Adds default CL labels to rows that did not match against the crosswalk table.
+
+    Args:
+        obs (pd.DataFrame): Data rows
+        clid_label_column (str): Column to check and update with default CL labels
+        label_column (str): Column with defaults
+    """
+    obs.loc[obs[clid_label_column].isna(), clid_label_column] = obs[label_column]
 
 
 def _set_default_match(obs: pd.DataFrame, column: str) -> None:
@@ -158,6 +176,7 @@ def _get_empty_table(args: argparse.Namespace) -> pd.DataFrame:
             args.crosswalk_table_organ_level_column,
             args.crosswalk_table_label_column,
             args.crosswalk_table_clid_column,
+            args.crosswalk_table_clid_label_column,
             args.crosswalk_table_match_column,
         ]
     )
@@ -208,6 +227,7 @@ def main(args: argparse.Namespace):
         args.crosswalk_table_organ_level_column,
         args.crosswalk_table_label_column,
         args.crosswalk_table_clid_column,
+        args.crosswalk_table_clid_label_column,
         args.crosswalk_table_match_column,
     )
     matrix.write_h5ad(args.output_matrix)
@@ -249,6 +269,11 @@ def _get_arg_parser() -> argparse.ArgumentParser:
         "--crosswalk-table-clid-column",
         default="CL_ID",
         help="Column with CL ID in crosswalking table",
+    )
+    parser.add_argument(
+        "--crosswalk-table-clid-label-column",
+        default="CL_Label",
+        help="Column with CL label in crosswalking table",
     )
     parser.add_argument(
         "--crosswalk-table-match-column",
