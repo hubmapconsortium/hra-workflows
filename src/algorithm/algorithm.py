@@ -53,9 +53,9 @@ class Algorithm(t.Generic[OrganMetadata, Options], abc.ABC):
         """
         report = AlgorithmReport(output_matrix, output_annotations, output_report)
         try:
-            metadata = self.__load_metadata(organ, organ_metadata)
+            resolved_organ, metadata = self.__load_metadata(organ, organ_metadata)
             result = self.do_run(matrix, organ, metadata, t.cast(Options, options))
-            data = self.__post_process_result(result, organ, metadata)
+            data = self.__post_process_result(result, resolved_organ, metadata)
             report.set_success(data)
         except Exception as error:
             report.set_failure(error)
@@ -81,7 +81,9 @@ class Algorithm(t.Generic[OrganMetadata, Options], abc.ABC):
         """
         ...
 
-    def __load_metadata(self, organ: str, organ_metadata: Path) -> OrganMetadata:
+    def __load_metadata(
+        self, organ: str, organ_metadata: Path
+    ) -> t.Tuple[str, OrganMetadata]:
         """Loads metadata for an organ from file.
 
         Args:
@@ -89,16 +91,48 @@ class Algorithm(t.Generic[OrganMetadata, Options], abc.ABC):
             organ_metadata (Path): Path to metadata file
 
         Returns:
-            OrganMetadata: Organ specific metadata
+            t.Tuple[str, OrganMetadata]: The resolved organ id and associated metadata
 
         Raises:
             ValueError: If the organ is not supported by the algorithm
         """
         with open(organ_metadata) as file:
             metadata = json.load(file)
+        return self.__resolve_metadata(organ, organ, metadata, set())
+
+    def __resolve_metadata(
+        self,
+        original_organ: str,
+        organ: str,
+        metadata: t.Dict[str, t.Union[str, OrganMetadata]],
+        seen: t.Set[str],
+    ) -> t.Tuple[str, OrganMetadata]:
+        """Resolves organ and metadata following links in the metadata table.
+
+        Args:
+            original_organ (str): Original organ id
+            organ (str): Organ id
+            metadata (t.Dict[str, t.Union[str, OrganMetadata]]): Loaded metadata table
+            seen (t.Set[str]): Set of seen organ ids used to detect cycles in the metadata table
+
+        Returns:
+            t.Tuple[str, OrganMetadata]: The resolved organ id and associated metadata
+
+        Raises:
+            ValueError: If resolving metadata for the organ fails
+        """
         if organ not in metadata:
-            raise ValueError(f"Organ {organ} is not supported")
-        return metadata[organ]
+            raise ValueError(f"Organ {original_organ} is not supported")
+        if organ in seen:
+            raise ValueError(
+                f"Circular metadata links detected for organ {original_organ}"
+            )
+
+        seen.add(organ)
+        value = metadata[organ]
+        if isinstance(value, str):
+            return self.__resolve_metadata(original_organ, value, metadata, seen)
+        return organ, value
 
     def __post_process_result(
         self, result: RunResult, organ: str, metadata: OrganMetadata
@@ -107,6 +141,8 @@ class Algorithm(t.Generic[OrganMetadata, Options], abc.ABC):
 
         Args:
             result (RunResult): Run result dictionary
+            organ (str): Organ id
+            metadata (str): Organ metadata
 
         Returns:
             anndata.AnnData: Loaded h5ad data
