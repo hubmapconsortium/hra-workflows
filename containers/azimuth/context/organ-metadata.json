@@ -4,26 +4,14 @@
     "organ_level": "Kidney_L3",
     "prediction_column": "annotation.l3"
   },
-  "UBERON:0004538": {
-    "model": "kidneyref",
-    "organ_level": "Kidney_L3",
-    "prediction_column": "annotation.l3"
-  },
-  "UBERON:0004539": {
-    "model": "kidneyref",
-    "organ_level": "Kidney_L3",
-    "prediction_column": "annotation.l3"
-  },
+  "UBERON:0004538": "UBERON:0002113",
+  "UBERON:0004539": "UBERON:0002113",
   "UBERON:0002048": {
     "model": "lungref",
     "organ_level": "Lung_v2_finest_level",
     "prediction_column": "ann_finest_level"
   },
-  "UBERON:0001004": {
-    "model": "lungref",
-    "organ_level": "Lung_v2_finest_level",
-    "prediction_column": "ann_finest_level"
-  },
+  "UBERON:0001004": "UBERON:0002048",
   "UBERON:0000948": {
     "model": "heartref",
     "organ_level": "Heart_L2",

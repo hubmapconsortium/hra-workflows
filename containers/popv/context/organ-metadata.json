@@ -15,14 +15,8 @@
     "model": "Eye",
     "organ_level": "eye"
   },
-  "UBERON:0004548": {
-    "model": "Eye",
-    "organ_level": "eye"
-  },
-  "UBERON:0004549": {
-    "model": "Eye",
-    "organ_level": "eye"
-  },
+  "UBERON:0004548": "UBERON:0000970",
+  "UBERON:0004549": "UBERON:0000970",
   "UBERON:0000948": {
     "model": "Heart",
     "organ_level": "heart"
