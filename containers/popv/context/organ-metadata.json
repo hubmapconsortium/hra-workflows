@@ -17,6 +17,10 @@
   },
   "UBERON:0004548": "UBERON:0000970",
   "UBERON:0004549": "UBERON:0000970",
+  "UBERON:0001013": {
+    "model": "Fat",
+    "organ_level": "adipose tissue"
+  },
   "UBERON:0000948": {
     "model": "Heart",
     "organ_level": "heart"
