@@ -1,11 +1,12 @@
 import argparse
 import csv
-import re
-from pathlib import Path
 import typing as t
+from pathlib import Path
 
 import anndata
 import pandas as pd
+
+from src.util.ids import create_temp_asctb_id
 
 
 def filter_crosswalk_table(
@@ -18,7 +19,7 @@ def filter_crosswalk_table(
 ) -> pd.DataFrame:
     """Filter the crosswalk table to only include rows with organ id and level.
 
-    Also removes empty rows and cast values to string.
+    Also removes empty rows.
 
     Args:
         table (pd.DataFrame): Original full crosswalk table
@@ -29,24 +30,9 @@ def filter_crosswalk_table(
     organ_id_rows = table[organ_id_column].str.lower() == organ_id.lower()
     organ_level_rows = table[organ_level_column].str.lower() == organ_level.lower()
     filtered_table = table[organ_id_rows & organ_level_rows]
-    normalized_table = filtered_table.dropna().astype(str)
+    normalized_table = filtered_table.dropna(how="all")
     unique_table = normalized_table.drop_duplicates(table_label_column)
     return unique_table
-
-
-def generate_iri(label: str) -> str:
-    """Create a temporary IRI based on a label.
-
-    Args:
-        label (str): Label for the row
-
-    Returns:
-        str: Temporary IRI
-    """
-    suffix = label.lower().strip()
-    suffix = re.sub(r"\W+", "-", suffix)
-    suffix = re.sub(r"[^a-z0-9-]+", "", suffix)
-    return "ASCTB-TEMP:" + suffix
 
 
 def crosswalk(
@@ -75,10 +61,10 @@ def crosswalk(
         data_match_column (str): Column to store match type in
         table (pd.DataFrame): Crosswalk table
         table_organ_id_column (str): Column storing organ uberon ids
-        table_organ_lavel_column (str): Column storing organ levels
+        table_organ_level_column (str): Column storing organ levels
         table_label_column (str): Column used to match against the data
         table_clid_column (str): Column storing CLIDs
-        table_clid_column (str): Column storing CL labels
+        table_clid_label_column (str): Column storing CL labels
         table_match_column (str): Column storing match type
 
     Returns:
@@ -105,9 +91,10 @@ def crosswalk(
     )
     merged_obs.index = matrix.obs.index
 
-    _set_default_clid(merged_obs, data_clid_column, data_label_column)
-    _set_default_match(merged_obs, data_match_column)
-    _set_default_clid(merged_obs, table_clid_label_column, data_label_column)
+    default_clids = merged_obs[data_label_column].map(create_temp_asctb_id)
+    _set_defaults(merged_obs, data_clid_column, default_clids)
+    _set_defaults(merged_obs, table_clid_label_column, merged_obs[data_label_column])
+    _set_defaults(merged_obs, data_match_column, "skos:exactMatch")
 
     result = matrix.copy()
     result.obs = merged_obs
@@ -116,37 +103,17 @@ def crosswalk(
     return result
 
 
-def _set_default_clid(obs: pd.DataFrame, clid_column: str, label_column: str) -> None:
-    """Adds default CLIDs to rows that did not match against the crosswalk table.
+def _set_defaults(
+    obs: pd.DataFrame, column: str, defaults: t.Union[pd.Series, str]
+) -> None:
+    """Replace nan values with defaults in a column.
 
     Args:
-        obs (pd.DataFrame): Data rows
-        clid_column (str): Column to check and update with default CLIDs
-        label_column (str): Column used when generating default CLIDs
+        obs (pd.DataFrame): Data frame
+        column (str): Column to update
+        defaults (t.Union[pd.Series, str]): Default values
     """
-    defaults = obs.apply(lambda row: generate_iri(row[label_column]), axis=1)
-    obs.loc[obs[clid_column].isna(), clid_column] = defaults
-
-
-def _set_default_clid(obs: pd.DataFrame, clid_label_column: str, label_column: str) -> None:
-    """Adds default CL labels to rows that did not match against the crosswalk table.
-
-    Args:
-        obs (pd.DataFrame): Data rows
-        clid_label_column (str): Column to check and update with default CL labels
-        label_column (str): Column with defaults
-    """
-    obs.loc[obs[clid_label_column].isna(), clid_label_column] = obs[label_column]
-
-
-def _set_default_match(obs: pd.DataFrame, column: str) -> None:
-    """Adds default match type to rows that did not match against the crosswalk table.
-
-    Args:
-        obs (pd.DataFrame): Data rows
-        column (str): Column to check and update with default match type
-    """
-    obs.loc[obs[column].isna(), column] = "skos:exactMatch"
+    obs.loc[obs[column].isna(), column] = defaults
 
 
 def _fix_obs_columns_dtype(matrix: anndata.AnnData):
@@ -182,20 +149,43 @@ def _get_empty_table(args: argparse.Namespace) -> pd.DataFrame:
     )
 
 
-def _read_table(path: str) -> t.Optional[pd.DataFrame]:
+def _is_header_row(row: t.List[str], args: argparse.ArgumentParser) -> bool:
+    """Tests whether a row is the header row.
+
+    Args:
+        row (t.List[str]): Row to test
+        args (argparse.ArgumentParser): Same arguments as provided to `main`
+
+    Returns:
+        bool: True if it is the header row
+    """
+    to_lower_set = lambda items: set(map(str.lower, items))
+    columns = [
+        args.crosswalk_table_organ_id_column,
+        args.crosswalk_table_organ_level_column,
+        args.crosswalk_table_label_column,
+        args.crosswalk_table_clid_column,
+        args.crosswalk_table_clid_label_column,
+        args.crosswalk_table_match_column,
+    ]
+
+    return to_lower_set(columns).issubset(to_lower_set(row))
+
+
+def _read_table(args: argparse.Namespace) -> t.Optional[pd.DataFrame]:
     """Read a crosswalking table. Metadata rows before the header are skipped.
 
     Args:
-        path (str): Path to the csv file
+        args (argparse.Namespace): Same arguments as provided to `main`
 
     Returns:
         pd.DataFrame: A data frame with the table data
     """
-    with open(path) as file:
+    with open(args.crosswalk_table) as file:
         for row in csv.reader(file):
-            if row[0].lower() == "organ_level":
+            if _is_header_row(row, args):
                 return pd.read_csv(file, names=row)
-    return None
+    return _get_empty_table(args)
 
 
 def main(args: argparse.Namespace):
@@ -213,16 +203,12 @@ def main(args: argparse.Namespace):
     metadata = args.matrix.uns["hra_crosswalking"]
     matrix = crosswalk(
         args.matrix,
-        metadata["organ_id"],
-        metadata["organ_level"],
+        str(metadata["organ_id"]),
+        str(metadata["organ_level"]),
         args.annotation_column,
         args.clid_column,
         args.match_column,
-        (
-            args.crosswalk_table
-            if args.crosswalk_table is not None
-            else _get_empty_table(args)
-        ),
+        _read_table(args),
         args.crosswalk_table_organ_id_column,
         args.crosswalk_table_organ_level_column,
         args.crosswalk_table_label_column,
@@ -247,7 +233,7 @@ def _get_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--crosswalk-table",
-        type=_read_table,
+        required=True,
         help="crosswalking csv file path",
     )
     parser.add_argument(

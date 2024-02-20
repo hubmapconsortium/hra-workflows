@@ -5,6 +5,8 @@ import typing as t
 import anndata
 import pandas as pd
 
+from src.util.ids import create_cell_id
+
 
 def get_unique_rows_with_counts(
     matrix: anndata.AnnData, clid_column: str
@@ -54,6 +56,7 @@ def unique_rows_to_summary_rows(
     )
 
     df["@type"] = "CellSummaryRow"
+    df["cell_id"] = df["cell_id"].map(create_cell_id)
     df["percentage"] = df["count"] / df["count"].sum()
     df["gene_expr"] = (
         df["gene_expr"]
