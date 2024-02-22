@@ -8,6 +8,7 @@ output_dir <- args[2]
 
 # Load unique reference organs
 metadata <- fromJSON(file = organ_metadata_file)
+metadata <- metadata[sapply(metadata, is.list)] # Remove redirection links
 references <- unique(sapply(metadata, function(item) item$model))
 
 # Download and install data
