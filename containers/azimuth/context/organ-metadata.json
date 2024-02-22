@@ -33,11 +33,6 @@
     "organ_level": "Pancreas_L1",
     "prediction_column": "annotation.l1"
   },
-  "UBERON:0002373": {
-    "model": "tonsilref",
-    "organ_level": "Tonsil_v2_L2",
-    "prediction_column": "celltype.l2"
-  },
   "UBERON:0000178": {
     "model": "pbmcref",
     "organ_level": "Human_PBMC_L2",
