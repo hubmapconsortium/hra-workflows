@@ -10,10 +10,11 @@
   "UBERON:0002097": {
     "model": "Adult_Human_Skin.pkl"
   },
-  "UBERON:0001264": "UBERON:0000006",
+  "UBERON:0001264": {
+    "model": "Adult_Human_PancreaticIslet.pkl"
+  },
   "UBERON:0000006": {
-    "model": "Adult_Human_PancreaticIslet.pkl",
-    "comment": "Pancreas (UBERON:0001264) is redirected here"
+    "model": "Adult_Human_PancreaticIslet.pkl"
   },
   "UBERON:0000947": "UBERON:0000948",
   "UBERON:0000948": {
