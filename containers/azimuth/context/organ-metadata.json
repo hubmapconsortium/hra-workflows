@@ -1,26 +1,32 @@
 {
+  "UBERON:0004538": "UBERON:0002113",
+  "UBERON:0004539": "UBERON:0002113",
   "UBERON:0002113": {
     "model": "kidneyref",
     "organ_level": "Kidney_L3",
     "prediction_column": "annotation.l3"
   },
-  "UBERON:0004538": "UBERON:0002113",
-  "UBERON:0004539": "UBERON:0002113",
+  "UBERON:0002168": "UBERON:0002048",
+  "UBERON:0002178": "UBERON:0002048",
+  "UBERON:0002177": "UBERON:0002048",
+  "UBERON:0002167": "UBERON:0002048",
   "UBERON:0002048": {
     "model": "lungref",
     "organ_level": "Lung_v2_finest_level",
     "prediction_column": "ann_finest_level"
   },
-  "UBERON:0001004": "UBERON:0002048",
+  "UBERON:0000947": "UBERON:0000948",
   "UBERON:0000948": {
     "model": "heartref",
     "organ_level": "Heart_L2",
-    "prediction_column": "celltype.l2"
+    "prediction_column": "celltype.l2",
+    "comment": "Aorta (UBERON:0000947) is redirected here"
   },
-  "UBERON:0000955": {
+  "UBERON:0001384": {
     "model": "humancortexref",
     "organ_level": "",
-    "prediction_column": "subclass"
+    "prediction_column": "subclass",
+    "comment": "Not redirecting brain (UBERON:0000955) to here as it is too broad"
   },
   "UBERON:0001264": {
     "model": "pancreasref",
@@ -29,7 +35,7 @@
   },
   "UBERON:0002373": {
     "model": "tonsilref",
-    "organ_level": "",
+    "organ_level": "Tonsil_v2_L2",
     "prediction_column": "celltype.l2"
   },
   "UBERON:0000178": {
@@ -44,7 +50,7 @@
   },
   "UBERON:0001013": {
     "model": "adiposeref",
-    "organ_level": "",
+    "organ_level": "Adipose_L2",
     "prediction_column": "celltype.l2"
   }
 }

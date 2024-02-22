@@ -11,19 +11,21 @@
     "model": "Bone_Marrow",
     "organ_level": "bone marrow"
   },
+  "UBERON:0004548": "UBERON:0000970",
+  "UBERON:0004549": "UBERON:0000970",
   "UBERON:0000970": {
     "model": "Eye",
     "organ_level": "eye"
   },
-  "UBERON:0004548": "UBERON:0000970",
-  "UBERON:0004549": "UBERON:0000970",
   "UBERON:0001013": {
     "model": "Fat",
     "organ_level": "adipose tissue"
   },
+  "UBERON:0000947": "UBERON:0000948",
   "UBERON:0000948": {
     "model": "Heart",
-    "organ_level": "heart"
+    "organ_level": "heart",
+    "comment": "Aorta (UBERON:0000947) is redirected here"
   },
   "UBERON:0000059": {
     "model": "Large_Intestine",
@@ -33,25 +35,23 @@
     "model": "Liver",
     "organ_level": "liver"
   },
+  "UBERON:0002168": "UBERON:0002048",
+  "UBERON:0002178": "UBERON:0002048",
+  "UBERON:0002177": "UBERON:0002048",
+  "UBERON:0002167": "UBERON:0002048",
   "UBERON:0002048": {
     "model": "Lung",
     "organ_level": "lung"
   },
-  "UBERON:0001004": {
-    "model": "Lung",
-    "organ_level": "respiratory system"
-  },
-  "UBERON:0000029": {
-    "model": "Lymph_Node",
-    "organ_level": "lymph node"
-  },
   "UBERON:0002509": {
     "model": "Lymph_Node",
-    "organ_level": "mesenteric lymph node"
+    "organ_level": "mesenteric lymph node",
+    "comment": "Generic lymph node (UBERON:0000029) is redirected here"
   },
   "UBERON:0001911": {
     "model": "Mammary",
-    "organ_level": "mammary gland"
+    "organ_level": "mammary gland",
+    "comment": "Should breast (UBERON:0000310) be redirected here?"
   },
   "UBERON:0001264": {
     "model": "Pancreas",
@@ -61,9 +61,9 @@
     "model": "Prostate",
     "organ_level": "prostate gland"
   },
-  "UBERON:0000079": {
-    "model": "Prostate",
-    "organ_level": "male reproductive system"
+  "UBERON:0001044": {
+    "model": "Salivary Gland",
+    "organ_level": ""
   },
   "UBERON:0002097": {
     "model": "Skin",
@@ -80,6 +80,10 @@
   "UBERON:0002370": {
     "model": "Thymus",
     "organ_level": "thymus"
+  },
+  "UBERON:0001723": {
+    "model": "Tongue",
+    "organ_level": ""
   },
   "UBERON:0003126": {
     "model": "Trachea",

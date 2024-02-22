@@ -1,21 +1,37 @@
 {
+  "UBERON:0002168": "UBERON:0002048",
+  "UBERON:0002178": "UBERON:0002048",
+  "UBERON:0002177": "UBERON:0002048",
+  "UBERON:0002167": "UBERON:0002048",
   "UBERON:0002048": {
-    "model": "Human_Lung_Atlas.pkl"
+    "model": "Human_Lung_Atlas.pkl",
+    "alt_model": "Cells_Lung_Airway.pkl"
   },
-  "UBERON:0001004": "UBERON:0002048",
   "UBERON:0002097": {
     "model": "Adult_Human_Skin.pkl"
   },
-  "UBERON:0001264": {
-    "model": "Adult_Human_PancreaticIslet.pkl"
+  "UBERON:0001264": "UBERON:0000006",
+  "UBERON:0000006": {
+    "model": "Adult_Human_PancreaticIslet.pkl",
+    "comment": "Pancreas (UBERON:0001264) is redirected here"
   },
+  "UBERON:0000947": "UBERON:0000948",
   "UBERON:0000948": {
-    "model": "Healthy_Adult_Heart.pkl"
+    "model": "Healthy_Adult_Heart.pkl",
+    "comment": "Aorta (UBERON:0000947) is redirected here"
   },
   "UBERON:0002107": {
     "model": "Healthy_Human_Liver.pkl"
   },
-  "UBERON:0000955": {
-    "model": "Human_AdultAged_Hippocampus.pkl"
+  "UBERON:0002421": {
+    "model": "Human_AdultAged_Hippocampus.pkl",
+    "alt_model": "Human_Longitudinal_Hippocampus.pkl",
+    "comment": "Not redirecting brain (UBERON:0000955) to here as it is too broad"
+  },
+  "UBERON:0002108": {
+    "model": "Cells_Intestinal_Tract.pkl"
+  },
+  "UBERON:0000059": {
+    "model": "Cells_Intestinal_Tract.pkl"
   }
 }
