@@ -1,4 +1,9 @@
 type: record
 name: options
 label: Celltypist specific options
-fields: {}
+fields:
+  queryLayersKey:
+    type: string?
+    label: Data layer to use
+    inputBinding:
+      prefix: --query-layers-key

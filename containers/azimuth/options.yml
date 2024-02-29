@@ -7,3 +7,8 @@ fields:
     label: Directory with reference data directories
     inputBinding:
       prefix: --reference-data-dir
+  queryLayersKey:
+    type: string?
+    label: Data layer to use
+    inputBinding:
+      prefix: --query-layers-key

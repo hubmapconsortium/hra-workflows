@@ -299,9 +299,7 @@ def _get_arg_parser():
         required=True,
         help="Path to models directory",
     )
-    parser.add_argument(
-        "--query-layers-key", required=True, help="Name of layer with raw counts"
-    )
+    parser.add_argument("--query-layers-key", help="Name of layer with raw counts")
     parser.add_argument("--prediction-mode", default="fast", help="Prediction mode")
     parser.add_argument(
         "--cell-ontology-dir",

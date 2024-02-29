@@ -13,7 +13,7 @@ fields:
     inputBinding:
       prefix: --models-dir
   queryLayersKey:
-    type: string
+    type: string?
     inputBinding:
       prefix: --query-layers-key
   predictionMode:
