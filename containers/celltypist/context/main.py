@@ -8,6 +8,7 @@ import pandas
 import scanpy
 
 from src.algorithm import Algorithm, RunResult, add_common_arguments
+from src.util.layers import set_data_layer
 
 
 class CelltypistOrganMetadata(t.TypedDict):
@@ -32,7 +33,7 @@ class CelltypistAlgorithm(Algorithm[CelltypistOrganMetadata, CelltypistOptions])
     ) -> RunResult:
         """Annotate data using celltypist."""
         data = scanpy.read_h5ad(matrix)
-        self.set_data_layer(data, options["query_layers_key"])
+        data = set_data_layer(data, options["query_layers_key"])
         data = self.normalize(data)
         data, var_names = self.normalize_var_names(data, options)
         data = celltypist.annotate(
@@ -41,20 +42,6 @@ class CelltypistAlgorithm(Algorithm[CelltypistOrganMetadata, CelltypistOptions])
         data.var_names = t.cast(t.Any, var_names)
 
         return {"data": data, "organ_level": metadata["model"].replace(".", "_")}
-
-    def set_data_layer(
-        self, matrix: scanpy.AnnData, query_layers_key: t.Optional[str]
-    ) -> None:
-        """Set the data layer to use for annotating.
-
-        Args:
-            matrix (anndata.AnnData): Matrix to update
-            query_layers_key (t.Optional[str]): A layer name or 'raw'
-        """
-        if query_layers_key == "raw":
-            matrix.X = matrix.raw.X
-        elif query_layers_key is not None:
-            matrix.X = matrix.layers[query_layers_key].copy()
 
     def normalize(self, data: scanpy.AnnData) -> scanpy.AnnData:
         """Normalizes data according to celltypist requirements.

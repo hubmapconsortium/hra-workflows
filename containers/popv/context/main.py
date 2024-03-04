@@ -10,6 +10,7 @@ import scanpy
 import torch
 
 from src.algorithm import Algorithm, RunResult, add_common_arguments
+from src.util.layers import set_data_layer
 
 
 class PopvOrganMetadata(t.TypedDict):
@@ -84,12 +85,9 @@ class PopvAlgorithm(Algorithm[PopvOrganMetadata, PopvOptions]):
         reference_data = scanpy.read_h5ad(reference_data_path)
         n_samples_per_label = self.get_n_samples_per_label(reference_data, options)
         data = self.normalize_var_names(data, options)
+        data = set_data_layer(data, options["query_layers_key"])
 
-        if options["query_layers_key"] == "raw":
-            options["query_layers_key"] = None
-            data.X = numpy.rint(data.raw.X)
-
-        if options["query_layers_key"] == "X":
+        if options["query_layers_key"] in ('X', 'raw'):
             options["query_layers_key"] = None
             data.X = numpy.rint(data.X)
 

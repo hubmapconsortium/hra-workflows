@@ -7,6 +7,7 @@ import anndata
 import pandas
 
 from src.algorithm import Algorithm, RunResult, add_common_arguments
+from src.util.layers import set_data_layer
 
 
 class AzimuthOrganMetadata(t.TypedDict):
@@ -41,8 +42,7 @@ class AzimuthAlgorithm(Algorithm[AzimuthOrganMetadata, AzimuthOptions]):
         temp_index = self.create_temp_obs_index(data)
         clean_matrix_path = Path("clean_matrix.h5ad")
         clean_matrix = self.create_clean_matrix(data, temp_index)
-
-        self.set_data_layer(clean_matrix, options["query_layers_key"])
+        clean_matrix = set_data_layer(clean_matrix, options["query_layers_key"])
         clean_matrix.write_h5ad(clean_matrix_path)
 
         annotated_matrix_path = self.run_azimuth_scripts(
@@ -89,20 +89,6 @@ class AzimuthAlgorithm(Algorithm[AzimuthOrganMetadata, AzimuthOptions]):
         clean_matrix.obs = clean_obs
 
         return clean_matrix
-
-    def set_data_layer(
-        self, matrix: anndata.AnnData, query_layers_key: t.Optional[str]
-    ) -> None:
-        """Set the data layer to use for annotating.
-
-        Args:
-            matrix (anndata.AnnData): Matrix to update
-            query_layers_key (t.Optional[str]): A layer name or 'raw'
-        """
-        if query_layers_key == "raw":
-            matrix.X = matrix.raw.X
-        elif query_layers_key is not None:
-            matrix.X = matrix.layers[query_layers_key].copy()
 
     def copy_annotations(
         self,
