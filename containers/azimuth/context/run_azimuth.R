@@ -9,6 +9,7 @@ matrix_path <- args[1]
 reference <- args[2]
 
 # Annotate
+options(timeout=60 * 60)
 output_data <- RunAzimuth(matrix_path, reference=reference)
 
 # Save and convert to h5ad
