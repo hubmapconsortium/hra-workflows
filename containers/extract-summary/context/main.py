@@ -83,7 +83,7 @@ def main(args: argparse.Namespace):
     summary = {
         "@type": "CellSummary",
         "annotation_method": args.annotation_method,
-        "modality": "sc_bulk",
+        "modality": "sc_transcriptomics",
         "cell_source": args.cell_source,
         "summary": summary_rows,
     }
