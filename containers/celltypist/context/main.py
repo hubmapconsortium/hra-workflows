@@ -34,6 +34,7 @@ class CelltypistAlgorithm(Algorithm[CelltypistOrganMetadata, CelltypistOptions])
         """Annotate data using celltypist."""
         data = scanpy.read_h5ad(matrix)
         data = set_data_layer(data, options["query_layers_key"])
+        data = self.clean(data)
         data = self.normalize(data)
         data, var_names = self.normalize_var_names(data, options)
         data = celltypist.annotate(
@@ -42,6 +43,18 @@ class CelltypistAlgorithm(Algorithm[CelltypistOrganMetadata, CelltypistOptions])
         data.var_names = t.cast(t.Any, var_names)
 
         return {"data": data, "organ_level": metadata["model"].replace(".", "_")}
+    
+    def clean(self, data: scanpy.AnnData) -> scanpy.AnnData:
+        """Cleans the data removing any incompatible preprocessing that may exist.
+
+        Args:
+            data (scanpy.AnnData): Original data to clean
+
+        Returns:
+            scanpy.AnnData: Clean data
+        """
+        data.obsm = None
+        return data
 
     def normalize(self, data: scanpy.AnnData) -> scanpy.AnnData:
         """Normalizes data according to celltypist requirements.
