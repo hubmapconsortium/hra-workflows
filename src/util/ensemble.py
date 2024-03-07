@@ -45,7 +45,11 @@ def add_ensemble_data(
     index = matrix.var.index
     keys = index.map(strip_version)
     merged_var = matrix.var.merge(
-        ensemble, how="left", left_on=keys, right_on=_ENSEMBLE_COLUMN
+        ensemble,
+        how="left",
+        left_on=keys,
+        right_on=_ENSEMBLE_COLUMN,
+        suffixes=("_from_tool", None),
     )
     merged_var.index = index
     merged_var[_GENE_COLUMN].fillna(index.to_series().map(create_gene_id), inplace=True)
