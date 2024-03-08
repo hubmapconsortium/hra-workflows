@@ -72,7 +72,7 @@ steps:
       options:
         source: algorithm
         valueFrom: $(self.geneExpression || {})
-    out: [matrix_with_gene_expr]
+    out: [matrix_with_gene_expr, report]
   
   summarize:
     run: ../containers/extract-summary/pipeline.cwl
@@ -84,11 +84,30 @@ steps:
         valueFrom: $(self.summarize || {})
     out: [summary, annotations]
 
+  selectReport:
+    run:
+      class: ExpressionTool
+      requirements:
+        InlineJavascriptRequirement: {}
+
+      inputs:
+        reports: File[]
+      outputs:
+        report: File
+
+      expression: |
+        ${ return { report: inputs.reports[inputs.reports.length - 1] }; }
+    in:
+      reports:
+        source: [annotate/report, gene_expression/report]
+        pickValue: all_non_null
+    out: [report]
+
   collect:
     run: ./collect-files.cwl
     in:
       files:
-        source: [summarize/summary, summarize/annotations, annotate/report]
+        source: [summarize/summary, summarize/annotations, selectReport/report]
         pickValue: all_non_null
       outputDirectory:
         source: algorithm

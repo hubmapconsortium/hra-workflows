@@ -23,6 +23,10 @@ inputs:
 
 outputs:
   matrix_with_gene_expr:
-    type: File
+    type: File?
     outputBinding:
       glob: matrix_with_gene_expr.h5ad
+  report:
+    type: File?
+    outputBinding:
+      glob: report.json

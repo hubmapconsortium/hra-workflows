@@ -1,5 +1,6 @@
 import argparse
 import json
+import traceback
 import typing as t
 from pathlib import Path
 
@@ -121,6 +122,9 @@ def get_gene_expr(
     matrix.raw = matrix  # for getting gene names as output for sc.tl.rank_genes_groups
     filtered_matrix = filter_matrix(matrix, clid_column)
     filtered_matrix = add_ensemble_data(filtered_matrix, ensemble)
+    if len(filtered_matrix.obs[clid_column].unique()) <= 1:
+        raise ValueError("Data has too few unique cells for `rank_genes_groups`")
+
     sc.tl.rank_genes_groups(filtered_matrix, groupby=clid_column, n_genes=10)
     ct_marker_genes_df = format_marker_genes_df(
         pd.DataFrame(filtered_matrix.uns["rank_genes_groups"]["names"]),
@@ -156,10 +160,22 @@ def main(args: argparse.Namespace):
             CLI arguments, must contain "matrix", "clid_column",
             "gene_expr_column", and "output_matrix"
     """
-    matrix = get_gene_expr(
-        args.matrix, args.ensemble_lookup, args.clid_column, args.gene_expr_column
-    )
-    matrix.write_h5ad(args.output_matrix)
+    try:
+        matrix = get_gene_expr(
+            args.matrix, args.ensemble_lookup, args.clid_column, args.gene_expr_column
+        )
+        matrix.write_h5ad(args.output_matrix)
+    except Exception as error:
+        with open(args.output_report, "w") as file:
+            json.dump(
+                {
+                    "status": "failure",
+                    "cause": repr(error),
+                    "traceback": traceback.format_tb(error.__traceback__),
+                },
+                file,
+                indent=4,
+            )
 
 
 def _get_arg_parser() -> argparse.ArgumentParser:
@@ -179,6 +195,12 @@ def _get_arg_parser() -> argparse.ArgumentParser:
         type=Path,
         default="matrix_with_gene_expr.h5ad",
         help="matrix with gene expressions output path",
+    )
+    parser.add_argument(
+        "--output-report",
+        type=Path,
+        default="report.json",
+        help="Report file path in case of errors",
     )
 
     return parser
