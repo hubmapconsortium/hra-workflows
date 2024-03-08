@@ -171,3 +171,7 @@ temp/
 
 # DS Store 
 .DS_Store
+
+# Other
+models/
+crosswalking-tables/
