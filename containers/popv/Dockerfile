@@ -1,4 +1,4 @@
-FROM tensorflow/tensorflow:2.11.1
+FROM tensorflow/tensorflow:2.16.1
 
 RUN apt-get -y update && apt-get -y install python3-dev g++ git wget && apt-get clean
 
