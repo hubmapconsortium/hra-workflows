@@ -4,13 +4,88 @@ from logging import warn
 from pathlib import Path
 
 import anndata
-import numpy
-import popv
+import celltypist
+import h5py
+import numpy as np
+import pandas as pd
 import scanpy
+import scipy.sparse as sp_sparse
+import scvi.data.fields._layer_field as scvi_layer_field
 import torch
 
+import popv
 from src.algorithm import Algorithm, RunResult, add_common_arguments
 from src.util.layers import set_data_layer
+
+# From https://github.com/scverse/scvi-tools/blob/1.1.2/scvi/data/_utils.py#L15
+try:
+    # anndata >= 0.10
+    from anndata.experimental import CSCDataset, CSRDataset
+
+    SparseDataset = (CSRDataset, CSCDataset)
+except ImportError:
+    from anndata._core.sparse_dataset import SparseDataset
+
+
+# From https://github.com/scverse/scvi-tools/blob/1.1.2/scvi/data/_utils.py#L248
+# But with jax operations replaced by regular numpy calls
+def _check_nonnegative_integers(
+    data: t.Union[pd.DataFrame, np.ndarray, sp_sparse.spmatrix, h5py.Dataset],
+    n_to_check: int = 20,
+):
+    """Approximately checks values of data to ensure it is count data."""
+    # for backed anndata
+    if isinstance(data, h5py.Dataset) or isinstance(data, SparseDataset):
+        data = data[:100]
+
+    if isinstance(data, np.ndarray):
+        data = data
+    elif issubclass(type(data), sp_sparse.spmatrix):
+        data = data.data
+    elif isinstance(data, pd.DataFrame):
+        data = data.to_numpy()
+    else:
+        raise TypeError("data type not understood")
+
+    ret = True
+    if len(data) != 0:
+        inds = np.random.choice(len(data), size=(n_to_check,))
+        # Start of replacements
+        data = data.flat[inds]
+        negative = np.any(data < 0)
+        non_integer = np.any(data % 1 != 0)
+        # End of replacements
+        ret = not (negative or non_integer)
+    return ret
+
+
+def _fix_jax_segfault():
+    """Fixes a segfault that can happen inside docker containers
+    when running both knn_on_scvi and scanvi.
+
+    The error is caused by a race condition or data corruption in jax
+    when the algorithms load their respective model files.
+    I suspect there might be a slight version mismatch or similar when
+    creating the docker container but for now I just monkey patch the offending calls.
+    """
+    scvi_layer_field._check_nonnegative_integers = _check_nonnegative_integers
+
+
+def _fix_celltypist_forced_models_download(model_dir: Path):
+    """Prevent celltypist from redownloading all models.
+
+    Celltypist's `Model.load` function always attempts to download
+    all models if it cannot detect at least one *.pkl (pickle serialized)
+    file in it's default models directory even when provided with
+    a direct path to a model file.
+
+    Monkey patching celltypist's models directory path to a directory
+    with at least on *.pkl file will trick it into not downloading the models.
+
+    Args:
+        model_dir (Path): Directory with at least one *.pkl file
+    """
+    celltypist.models.models_path = model_dir
 
 
 class PopvOrganMetadata(t.TypedDict):
@@ -45,20 +120,21 @@ class PopvAlgorithm(Algorithm[PopvOrganMetadata, PopvOptions]):
         options: PopvOptions,
     ) -> RunResult:
         """Annotate data using popv."""
+        _fix_jax_segfault()
+
         data = scanpy.read_h5ad(matrix)
         data = self.prepare_query(data, organ, metadata["model"], options)
         popv.annotation.annotate_data(
             data,
             # TODO: onclass has been removed due to error in fast mode
             # seen_result_key is not added to the result in fast mode but still expected during compute_consensus
-            # https://github.com/YosefLab/PopV/blob/main/popv/annotation.py#L64
-            # https://github.com/YosefLab/PopV/blob/main/popv/algorithms/_onclass.py#L199
-            # Also excludes celltypist since web requests are not available inside the docker container
             methods=[
                 "knn_on_scvi",
                 "scanvi",
                 "svm",
                 "rf",
+                # "onclass",
+                "celltypist",
             ],
         )
 
@@ -81,23 +157,25 @@ class PopvAlgorithm(Algorithm[PopvOrganMetadata, PopvOptions]):
         reference_data_path = self.find_reference_data(
             options["reference_data_dir"], organ, model
         )
-        model_path = self.find_model_dir(options["models_dir"], organ, model)
         reference_data = scanpy.read_h5ad(reference_data_path)
         n_samples_per_label = self.get_n_samples_per_label(reference_data, options)
         data = self.normalize_var_names(data, options)
         data = set_data_layer(data, options["query_layers_key"])
 
-        if options["query_layers_key"] in ('X', 'raw'):
+        if options["query_layers_key"] in ("X", "raw"):
             options["query_layers_key"] = None
-            data.X = numpy.rint(data.X)
+            data.X = np.rint(data.X)
 
-        data = self.add_model_genes(data, model_path, options["query_layers_key"])
+        model_dir = self.find_model_dir(options["models_dir"], organ, model)
+        _fix_celltypist_forced_models_download(model_dir)
+
+        data = self.add_model_genes(data, model_dir, options["query_layers_key"])
         data.var_names_make_unique()
 
         query = popv.preprocessing.Process_Query(
             data,
             reference_data,
-            save_path_trained_models=str(model_path),
+            save_path_trained_models=f"{model_dir}/",
             prediction_mode=options["prediction_mode"],
             query_labels_key=options["query_labels_key"],
             query_batch_key=options["query_batch_key"],
@@ -109,7 +187,7 @@ class PopvAlgorithm(Algorithm[PopvOrganMetadata, PopvOptions]):
             cl_obo_folder=f"{options['cell_ontology_dir']}/",
             compute_embedding=True,
             hvg=None,
-            use_gpu=False,  # Using gpu with docker requires additional setup
+            accelerator="cpu",  # Using gpu with docker/apptainer requires additional setup
         )
         return query.adata
 
@@ -128,8 +206,8 @@ class PopvAlgorithm(Algorithm[PopvOrganMetadata, PopvOptions]):
         ref_labels_key = options["ref_labels_key"]
         n_samples_per_label = options["samples_per_label"]
         if ref_labels_key in reference_data.obs.columns:
-            n = numpy.min(reference_data.obs.groupby(ref_labels_key).size())
-            n_samples_per_label = numpy.max((n_samples_per_label, t.cast(int, n)))
+            n = np.min(reference_data.obs.groupby(ref_labels_key).size())
+            n_samples_per_label = np.max((n_samples_per_label, t.cast(int, n)))
         return n_samples_per_label
 
     def find_reference_data(self, dir: Path, organ: str, model: str) -> Path:
@@ -274,8 +352,8 @@ class PopvAlgorithm(Algorithm[PopvOrganMetadata, PopvOptions]):
             Path.joinpath(model_path, "scvi/model.pt"), map_location="cpu"
         )["var_names"]
         n_obs_data = data.X.shape[0]
-        new_genes = set(numpy.setdiff1d(model_genes, data.var_names))
-        zeroes = numpy.zeros((n_obs_data, len(new_genes)))
+        new_genes = set(np.setdiff1d(model_genes, data.var_names))
+        zeroes = np.zeros((n_obs_data, len(new_genes)))
         layers = {query_layers_key: zeroes} if query_layers_key else None
         new_data = scanpy.AnnData(X=zeroes, var=new_genes, layers=layers)
         new_data.obs_names = data.obs_names

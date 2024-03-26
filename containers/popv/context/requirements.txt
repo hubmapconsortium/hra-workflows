@@ -1,2 +1,2 @@
 popv==0.4.*
-zenodo_get==1.4.0
+zenodo_get==1.5.*

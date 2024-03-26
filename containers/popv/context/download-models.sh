@@ -5,7 +5,7 @@ MODELS_ID=${1:?"A zenodo models id must be provided to download!"}
 MODELS_DIR=${2:-"./popv/models"}
 
 mkdir -p $MODELS_DIR
-zenodo_get $MODELS_ID -o $MODELS_DIR
+zenodo_get $MODELS_ID -o $MODELS_DIR --continue-on-error --retry 2 --pause 30
 
 for ARCHIVE in $MODELS_DIR/*.tar.gz; do
   MODEL=$(basename -s .tar.gz $ARCHIVE)
