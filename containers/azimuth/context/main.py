@@ -87,6 +87,11 @@ class AzimuthAlgorithm(Algorithm[AzimuthOrganMetadata, AzimuthOptions]):
         clean_obs = pandas.DataFrame(index=temp_index)
         clean_matrix = matrix.copy()
         clean_matrix.obs = clean_obs
+        clean_matrix.obsm = None
+        clean_matrix.obsp = None
+        clean_matrix.varm = None
+        clean_matrix.varp = None
+        clean_matrix.uns = {}
 
         return clean_matrix
 
