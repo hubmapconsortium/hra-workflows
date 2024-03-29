@@ -7,3 +7,7 @@ fields:
     label: Data layer to use
     inputBinding:
       prefix: --query-layers-key
+  ensembleLookup:
+    type: File?
+    inputBinding:
+      prefix: --ensemble-lookup
