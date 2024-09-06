@@ -1,6 +1,6 @@
 FROM tensorflow/tensorflow:2.16.1
 
-RUN apt-get -y update && apt-get -y install python3-dev g++ git wget && apt-get clean
+RUN apt-get -y update && apt-get -y install python3-dev python3-pip g++ git wget && apt-get clean
 
 COPY context/download-ontology.sh .
 RUN ./download-ontology.sh
