@@ -14,4 +14,4 @@ COPY context/ .
 # Ensure numba has the correct settings or it might throw an error
 ENV NUMBA_NUM_THREADS=10
 
-CMD ["python", "/main.py"]
+CMD ["python3", "/main.py"]
