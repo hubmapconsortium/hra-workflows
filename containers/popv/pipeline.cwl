@@ -9,7 +9,7 @@ requirements:
     types:
       - $import: ./options.yml
 
-baseCommand: python
+baseCommand: python3
 arguments:
   - /main.py
 
