@@ -126,14 +126,12 @@ class PopvAlgorithm(Algorithm[PopvOrganMetadata, PopvOptions]):
         data = self.prepare_query(data, organ, metadata["model"], options)
         popv.annotation.annotate_data(
             data,
-            # TODO: onclass has been removed due to error in fast mode
-            # seen_result_key is not added to the result in fast mode but still expected during compute_consensus
             methods=[
                 "knn_on_scvi",
                 "scanvi",
                 "svm",
                 "rf",
-                # "onclass",
+                "onclass",
                 "celltypist",
             ],
         )
