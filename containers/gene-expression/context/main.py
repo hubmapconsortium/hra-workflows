@@ -106,7 +106,7 @@ def get_marker_genes_with_expr(
 
 
 def get_gene_expr(
-    matrix: anndata.AnnData, ensemble: Path, clid_column: str, gene_expr_column: str
+    matrix: anndata.AnnData, ensemble: Path, clid_column: str, gene_expr_column: str, n_genes: int
 ) -> anndata.AnnData:
     """Computes and adds gene mean expressions for all cells in the annotated data.
 
@@ -115,6 +115,7 @@ def get_gene_expr(
         ensemble (Path): Ensemble lookup data path
         clid_column (str): Cell type id column
         gene_expr_column (str): Column to store gene expression on
+        gene_expr_count (int): Number of top genes per cell type to save
 
     Returns:
         anndata.AnnData: Updated data with gene expressions
@@ -125,7 +126,7 @@ def get_gene_expr(
     if len(filtered_matrix.obs[clid_column].unique()) <= 1:
         raise ValueError("Data has too few unique cells for `rank_genes_groups`")
 
-    sc.tl.rank_genes_groups(filtered_matrix, groupby=clid_column, n_genes=200)
+    sc.tl.rank_genes_groups(filtered_matrix, groupby=clid_column, n_genes=n_genes)
     ct_marker_genes_df = format_marker_genes_df(
         pd.DataFrame(filtered_matrix.uns["rank_genes_groups"]["names"]),
         clid_column,
@@ -158,11 +159,11 @@ def main(args: argparse.Namespace):
     Args:
         args (argparse.Namespace):
             CLI arguments, must contain "matrix", "clid_column",
-            "gene_expr_column", and "output_matrix"
+            "gene_expr_column", "gene_expr_count", and "output_matrix"
     """
     try:
         matrix = get_gene_expr(
-            args.matrix, args.ensemble_lookup, args.clid_column, args.gene_expr_column
+            args.matrix, args.ensemble_lookup, args.clid_column, args.gene_expr_column, args.gene_expr_count
         )
         matrix.write_h5ad(args.output_matrix)
     except Exception as error:
@@ -189,6 +190,9 @@ def _get_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--clid-column", default="clid", help="Column with cell id")
     parser.add_argument(
         "--gene-expr-column", default="gene_expr", help="Column for gene_expr"
+    )
+    parser.add_argument(
+        "--gene-expr-count", default=200, help="number of top genes per cell type to save"
     )
     parser.add_argument(
         "--output-matrix",
