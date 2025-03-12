@@ -106,7 +106,11 @@ def get_marker_genes_with_expr(
 
 
 def get_gene_expr(
-    matrix: anndata.AnnData, ensemble: Path, clid_column: str, gene_expr_column: str, n_genes: int
+    matrix: anndata.AnnData,
+    ensemble: Path,
+    clid_column: str,
+    gene_expr_column: str,
+    n_genes: int,
 ) -> anndata.AnnData:
     """Computes and adds gene mean expressions for all cells in the annotated data.
 
@@ -163,7 +167,11 @@ def main(args: argparse.Namespace):
     """
     try:
         matrix = get_gene_expr(
-            args.matrix, args.ensemble_lookup, args.clid_column, args.gene_expr_column, args.gene_expr_count
+            args.matrix,
+            args.ensemble_lookup,
+            args.clid_column,
+            args.gene_expr_column,
+            args.gene_expr_count,
         )
         matrix.write_h5ad(args.output_matrix)
     except Exception as error:
@@ -192,7 +200,10 @@ def _get_arg_parser() -> argparse.ArgumentParser:
         "--gene-expr-column", default="gene_expr", help="Column for gene_expr"
     )
     parser.add_argument(
-        "--gene-expr-count", default=200, help="number of top genes per cell type to save"
+        "--gene-expr-count",
+        type=int,
+        default=200,
+        help="number of top genes per cell type to save",
     )
     parser.add_argument(
         "--output-matrix",
