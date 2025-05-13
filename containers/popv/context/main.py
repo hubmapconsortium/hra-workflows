@@ -400,7 +400,7 @@ def _get_arg_parser():
     parser.add_argument(
         "--ensemble-lookup",
         type=Path,
-        default="/ensemble-lookup.csv",
+        default="/src/assets/ensemble-lookup.csv",
         help="Ensemble id to gene name csv",
     )
     return parser

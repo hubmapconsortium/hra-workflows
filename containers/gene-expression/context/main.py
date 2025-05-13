@@ -131,6 +131,14 @@ def get_gene_expr(
         raise ValueError("Data has too few unique cells for `rank_genes_groups`")
 
     sc.tl.rank_genes_groups(filtered_matrix, groupby=clid_column, n_genes=n_genes)
+
+    # De-fragment the rank_genes_groups results
+    for key in ["names", "scores", "pvals", "pvals_adj", "logfoldchanges"]:
+        if key in filtered_matrix.uns["rank_genes_groups"]:
+            filtered_matrix.uns["rank_genes_groups"][key] = filtered_matrix.uns[
+                "rank_genes_groups"
+            ][key].copy()
+
     ct_marker_genes_df = format_marker_genes_df(
         pd.DataFrame(filtered_matrix.uns["rank_genes_groups"]["names"]),
         clid_column,

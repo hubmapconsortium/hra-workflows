@@ -21,12 +21,6 @@
     "model": "Fat",
     "organ_level": "adipose tissue"
   },
-  "UBERON:0000947": "UBERON:0000948",
-  "UBERON:0000948": {
-    "model": "Heart",
-    "organ_level": "heart",
-    "comment": "Aorta (UBERON:0000947) is redirected here"
-  },
   "UBERON:0000059": {
     "model": "Large_Intestine",
     "organ_level": "large intestine"

@@ -1,6 +1,13 @@
 # Changelog
 Changelog for HRA-workflows
 
+## 0.7 - 2025-05-13
+
+## Added in 0.7
+- Added pan-human-azimuth as an annotation tool
+- Updated ensemble lookups
+- Removed heart from popv-supported organs
+
 ## 0.5 - 2023-12-15
 
 ## Added in 0.5

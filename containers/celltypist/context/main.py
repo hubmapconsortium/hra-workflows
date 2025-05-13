@@ -69,12 +69,15 @@ class CelltypistAlgorithm(Algorithm[CelltypistOrganMetadata, CelltypistOptions])
             scanpy.AnnData: Normalized data
         """
         primary_column = "feature_name"
-        alternative_primary_column = "gene_symbol"
+        alternative_primary_columns = ["hugo_symbol", "gene_symbol"]
         if primary_column not in data.var.columns:
             logging.warning(
-                f"Missing {primary_column} data column. Attempting to use {alternative_primary_column} instead"
+                f"Missing {primary_column} data column. Attempting to use {alternative_primary_columns} instead"
             )
-            data.var = data.var.rename({alternative_primary_column: primary_column})
+            for column in alternative_primary_columns:
+                if column in data.var.columns:
+                    data.var = data.var.rename(columns={column: primary_column})
+                    break
 
         # NOTE: I've excluded some of the original code from an if statement that is always false
         # https://github.com/cns-iu/ct-ann-predictive-analytics/blob/main/celltypist/celltypist_prediction_pipeline.py#L116
@@ -128,7 +131,7 @@ def _get_arg_parser():
     parser.add_argument(
         "--ensemble-lookup",
         type=Path,
-        default="/ensemble-lookup.csv",
+        default="/src/assets/ensemble-lookup.csv",
         help="Ensemble id to gene name csv",
     )
     parser.add_argument("--query-layers-key", help="Data layer to use")
