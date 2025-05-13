@@ -11,6 +11,7 @@ requirements:
       - $import: ./containers/azimuth/options.yml
       - $import: ./containers/celltypist/options.yml
       - $import: ./containers/popv/options.yml
+      - $import: ./containers/pan-human-azimuth/options.yml
       - $import: ./containers/crosswalking/options.yml
       - $import: ./containers/gene-expression/options.yml
       - $import: ./containers/extract-summary/options.yml

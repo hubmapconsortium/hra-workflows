@@ -1,4 +1,4 @@
-var ALGORITHMS = ["azimuth", "celltypist", "popv"];
+var ALGORITHMS = ["azimuth", "celltypist", "popv", "pan-human-azimuth"];
 
 /**
  * Finds the algorithm selected in the option object

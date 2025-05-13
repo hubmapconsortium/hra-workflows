@@ -1,0 +1,13 @@
+type: record
+name: options
+label: pan-human-azimuth specific options
+fields:
+  queryLayersKey:
+    type: string?
+    label: Data layer to use
+    inputBinding:
+      prefix: --query-layers-key
+  ensembleLookup:
+    type: File?
+    inputBinding:
+      prefix: --ensemble-lookup

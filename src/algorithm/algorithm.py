@@ -23,10 +23,12 @@ class Algorithm(t.Generic[OrganMetadata, Options], abc.ABC):
 
     Attributes:
         prediction_column (t.Optional[str]): Column in annotated data with the predictions
+        is_pan_organ (bool): Whether the algorithm operates independent of organ
     """
 
-    def __init__(self, prediction_column: t.Optional[str] = None):
+    def __init__(self, prediction_column: t.Optional[str] = None, is_pan_organ: bool = False):
         self.prediction_column = prediction_column
+        self.is_pan_organ = is_pan_organ == True
 
     def run(
         self,
@@ -121,7 +123,7 @@ class Algorithm(t.Generic[OrganMetadata, Options], abc.ABC):
         Raises:
             ValueError: If resolving metadata for the organ fails
         """
-        if organ not in metadata:
+        if not self.is_pan_organ and organ not in metadata:
             raise ValueError(f"Organ {original_organ} is not supported")
         if organ in seen:
             raise ValueError(
@@ -129,7 +131,7 @@ class Algorithm(t.Generic[OrganMetadata, Options], abc.ABC):
             )
 
         seen.add(organ)
-        value = metadata[organ]
+        value = metadata.get(organ, {})
         if isinstance(value, str):
             return self.__resolve_metadata(original_organ, value, metadata, seen)
         return organ, value
@@ -164,7 +166,7 @@ class Algorithm(t.Generic[OrganMetadata, Options], abc.ABC):
 
         data.uns["hra_organ_metadata"] = metadata
         data.uns["hra_crosswalking"] = {
-            "organ_id": organ,
+            "organ_id": result.get("organ_id", organ),
             "organ_level": result["organ_level"],
         }
 
