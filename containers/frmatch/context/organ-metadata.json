@@ -1,0 +1,10 @@
+{
+  "UBERON:0002168": "UBERON:0002048",
+  "UBERON:0002178": "UBERON:0002048",
+  "UBERON:0002177": "UBERON:0002048",
+  "UBERON:0002167": "UBERON:0002048",
+  "UBERON:0002048": {
+    "model": "lung",
+    "organ_level": "lung"
+  }
+}
