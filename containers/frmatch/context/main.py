@@ -56,7 +56,7 @@ class FRmatchAlgorithm(Algorithm[FRmatchOrganMetadata, FRmatchOptions]):
         adata_query = self.into_ref_space(adata_query.copy(), adata_organ.copy())
 
         # Run FRmatch cell2cluster
-        settings, p_values = frmatch.FRmatch_cell2cluster(adata_query, adata_organ, subsamp_iter = 10, cluster_header_query = cluster_header, cluster_header_ref = cluster_header, save = True)
+        settings, p_values = frmatch.FRmatch_cell2cluster(adata_query, adata_organ, subsamp_iter = 1000, cluster_header_query = cluster_header, cluster_header_ref = cluster_header, save = True)
 
         # Extracting annotation (per cell) from p_values
         annotation = self.get_annotation(p_values)
