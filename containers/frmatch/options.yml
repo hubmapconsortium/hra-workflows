@@ -1,0 +1,14 @@
+type: record
+name: options
+label: Frmatch specific options
+fields:
+  referenceDataDir:
+    type: Directory
+    label: Directory with reference data files in the h5ad format
+    inputBinding:
+      prefix: --reference-data-dir
+  queryLayersKey:
+    type: string?
+    label: Data layer to use
+    inputBinding:
+      prefix: --query-layers-key

@@ -30,9 +30,14 @@ steps:
     in: []
     out: [data]
 
+  downloadFrmatch:
+    run: ./containers/frmatch/download-data.cwl
+    in: []
+    out: [data]
+
   collectFiles:
     run: ./steps/collect-files.cwl
     in:
-      files: [downloadAzimuth/data, downloadPopv/data]
+      files: [downloadAzimuth/data, downloadPopv/data, downloadFrmatch/data]
       outputDirectory: outputDirectory
     out: [directory]

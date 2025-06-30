@@ -1,0 +1,11 @@
+{
+  "UBERON:0002168": "UBERON:0002048",
+  "UBERON:0002178": "UBERON:0002048",
+  "UBERON:0002177": "UBERON:0002048",
+  "UBERON:0002167": "UBERON:0002048",
+  "UBERON:0002048": {
+    "model": "adata_frmatch_hlca_reference_n50819.h5ad",
+    "organ_level": "lung", 
+    "cluster_header": "ann_finest_level"
+  }
+}

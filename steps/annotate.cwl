@@ -13,6 +13,7 @@ requirements:
       - $import: ../containers/celltypist/options.yml
       - $import: ../containers/popv/options.yml
       - $import: ../containers/pan-human-azimuth/options.yml
+      - $import: ../containers/frmatch/options.yml
 
 inputs:
   matrix: File
@@ -25,6 +26,7 @@ inputs:
           celltypist: ../containers/celltypist/options.yml#options?
           popv: ../containers/popv/options.yml#options?
           pan-human-azimuth: ../containers/pan-human-azimuth/options.yml#options?
+          frmatch: ../containers/frmatch/options.yml#options?
 
 outputs:
   annotations:
@@ -34,6 +36,7 @@ outputs:
       - celltypist/annotations
       - popv/annotations
       - pan-human-azimuth/annotations
+      - frmatch/annotations
     pickValue: first_non_null
   annotated_matrix:
     type: File
@@ -42,6 +45,7 @@ outputs:
       - celltypist/annotated_matrix
       - popv/annotated_matrix
       - pan-human-azimuth/annotated_matrix
+      - frmatch/annotated_matrix
     pickValue: first_non_null
   report:
     type: File
@@ -50,6 +54,7 @@ outputs:
       - celltypist/report
       - popv/report
       - pan-human-azimuth/report
+      - frmatch/report
     pickValue: first_non_null
 
 steps:
@@ -95,4 +100,15 @@ steps:
       options:
         source: algorithm
         valueFrom: $(inputs.options['pan-human-azimuth'] || null)
+    out: [annotations, annotated_matrix, report]
+  
+  frmatch:
+    run: ../containers/frmatch/pipeline.cwl
+    when: $(!!inputs.options)
+    in:
+      matrix: matrix
+      organ: organ
+      options:
+        source: algorithm
+        valueFrom: $(inputs.options.frmatch || null)
     out: [annotations, annotated_matrix, report]
