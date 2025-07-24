@@ -1,0 +1,23 @@
+type: record
+name: options
+label: NSForest options
+fields:
+  clidColumn:
+    type: string?
+    label: Cell id column
+    inputBinding:
+      prefix: --clid-column
+  geneExprColumn:
+    type: string?
+    label: Gene expression column
+    inputBinding:
+      prefix: --gene-expr-column
+  geneExprCount:
+    type: int?
+    label: Number of top genes per cell type to save
+    inputBinding:
+      prefix: --gene-expr-count
+  ensembleLookup:
+    type: File?
+    inputBinding:
+      prefix: --ensemble-lookup 
