@@ -18,6 +18,7 @@ requirements:
       - $import: ../containers/frmatch/options.yml
       - $import: ../containers/crosswalking/options.yml
       - $import: ../containers/gene-expression/options.yml
+      - $import: ../containers/nsforest/options.yml
       - $import: ../containers/extract-summary/options.yml
 
 inputs:
@@ -34,6 +35,7 @@ inputs:
           frmatch: ../containers/frmatch/options.yml#options?
           crosswalk: ../containers/crosswalking/options.yml#options?
           geneExpression: ../containers/gene-expression/options.yml#options?
+          nsforest: ../containers/nsforest/options.yml#options?
           summarize: ../containers/extract-summary/options.yml#options?
           directory: string?
 
@@ -77,12 +79,22 @@ steps:
         source: algorithm
         valueFrom: $(self.geneExpression || {})
     out: [matrix_with_gene_expr, report]
+
+  nsforest:
+    run: ../containers/nsforest/pipeline.cwl
+    when: $(!!inputs.matrix)
+    in:
+      matrix: gene_expression/matrix_with_gene_expr
+      options:
+        source: algorithm
+        valueFrom: $(self.nsforest || {})
+    out: [matrix_with_nsforest, report]
   
   summarize:
     run: ../containers/extract-summary/pipeline.cwl
     when: $(!!inputs.matrix)
     in:
-      matrix: gene_expression/matrix_with_gene_expr
+      matrix: nsforest/matrix_with_nsforest
       options:
         source: algorithm
         valueFrom: $(self.summarize || {})
@@ -103,7 +115,7 @@ steps:
         ${ return { report: inputs.reports[inputs.reports.length - 1] }; }
     in:
       reports:
-        source: [annotate/report, gene_expression/report]
+        source: [annotate/report, gene_expression/report, nsforest/report]
         pickValue: all_non_null
     out: [report]
 
