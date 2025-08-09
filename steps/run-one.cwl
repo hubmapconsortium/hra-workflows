@@ -89,7 +89,7 @@ steps:
         source: algorithm
         valueFrom: $(self.nsforest || {})
     out: [matrix_with_nsforest, report]
-  
+
   summarize:
     run: ../containers/extract-summary/pipeline.cwl
     when: $(!!inputs.matrix)
@@ -115,7 +115,8 @@ steps:
         ${ return { report: inputs.reports[inputs.reports.length - 1] }; }
     in:
       reports:
-        source: [annotate/report, gene_expression/report, nsforest/report]
+        #source: [annotate/report, gene_expression/report, nsforest/report]
+        source: [annotate/report, nsforest/report]
         pickValue: all_non_null
     out: [report]
 

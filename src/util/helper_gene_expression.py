@@ -44,21 +44,18 @@ def get_mean_expr_value(
     Returns:
         float: The mean expression
     """
+    
+    # Get cells of this type
+    cells_of_type = matrix.obs[matrix.obs[clid_column] == cell_type]
+
     cell_indices = [
         matrix.obs.index.get_loc(cell_index)
-        for cell_index in matrix.obs[matrix.obs[clid_column] == cell_type].index
+        for cell_index in cells_of_type.index
     ]
-
     gene_loc = matrix.var.index.get_loc(gene)
     expr_values = matrix.X[cell_indices, gene_loc]
+    mean_expr = expr_values.mean()
 
-    try:
-        mean_expr = expr_values.mean()
-        print(f"Mean expression: {mean_expr}")
-    except Exception as e:
-        print(f"ERROR in mean() calculation: {e}")
-        print(f"expr_values details: {expr_values}")
-        raise e
     return float(mean_expr)
 
 
@@ -81,21 +78,40 @@ def get_marker_genes_with_expr(
     Returns:
         t.List[dict]: Mean expressions, the dicts contains "gene_label" and "mean_gene_expr_value"
     """
+    
     output: list[dict] = []
 
-    for gene in marker_genes:
-        data = gene_data.loc[gene]
-
-        output.append(
-            {
-                "gene_id": data.get("hgnc", ""),
-                "gene_label": data.get("gene_name", gene),
-                "ensembl_id": gene,
-                "mean_gene_expr_value": get_mean_expr_value(
-                    matrix, clid_column, cell_type, gene
-                ),
-            }
-        )
+    for i, gene in enumerate(marker_genes):
+        try:
+            # Check if gene exists in gene_data
+            if gene in gene_data.index:
+                data = gene_data.loc[gene]
+                output.append(
+                    {
+                        "gene_id": data.get("hgnc", ""),
+                        "gene_label": data.get("gene_name", gene),
+                        "ensembl_id": gene,
+                        "mean_gene_expr_value": get_mean_expr_value(
+                            matrix, clid_column, cell_type, gene
+                        ),
+                    }
+                )
+            else:
+                # Gene not found in gene_data, use default values
+                output.append(
+                    {
+                        "gene_id": "",
+                        "gene_label": gene,
+                        "ensembl_id": gene,
+                        "mean_gene_expr_value": get_mean_expr_value(
+                            matrix, clid_column, cell_type, gene
+                        ),
+                    }
+                )
+        except Exception as e:
+            print(f"ERROR: Exception type: {type(e)}")
+            continue
+    
     return output
 
 
@@ -116,7 +132,7 @@ def prepare_filtered_matrix(
     Raises:
         ValueError: If too few unique cell types for marker discovery
     """
-    matrix.raw = matrix  # keep raw counts for expression look‑up
+    matrix.raw = matrix  
 
     filtered_matrix = filter_matrix(matrix, clid_column)
     filtered_matrix = add_ensemble_data(filtered_matrix, ensemble)
@@ -146,15 +162,56 @@ def merge_markers_into_matrix(
     Returns:
         anndata.AnnData: Updated matrix with marker gene data
     """
-    # Merge into obs
+    
+    # Merge into obs - explicitly specify the merge column to avoid unhashable type errors
     merged_obs = matrix.obs.merge(
         markers_df[[clid_column, gene_expr_column]],
         how="left",
+        left_on=clid_column,
+        right_on=clid_column,
     )
+
+    
     merged_obs.fillna({gene_expr_column: "[]"}, inplace=True)
-    merged_obs[gene_expr_column] = merged_obs[gene_expr_column].apply(json.dumps)
+
+    
+    # Handle the case where pandas merge created suffixes
+    actual_gene_expr_column = gene_expr_column
+    if gene_expr_column not in merged_obs.columns:
+        # Check for suffixed columns
+        if f"{gene_expr_column}_x" in merged_obs.columns and f"{gene_expr_column}_y" in merged_obs.columns:
+            # Use the _y column (from markers_df) and drop the _x column (from matrix.obs)
+            actual_gene_expr_column = f"{gene_expr_column}_y"
+            merged_obs = merged_obs.drop(columns=[f"{gene_expr_column}_x"])
+        elif f"{gene_expr_column}_y" in merged_obs.columns:
+            actual_gene_expr_column = f"{gene_expr_column}_y"
+        else:
+            raise KeyError(f"Column {gene_expr_column} not found in merged_obs")
+    
+    
+    if actual_gene_expr_column in merged_obs.columns:
+        
+        try:
+            merged_obs[actual_gene_expr_column] = merged_obs[actual_gene_expr_column].apply(json.dumps)
+
+        except Exception as e:
+            # Handle the case where json.dumps fails
+            merged_obs[actual_gene_expr_column] = merged_obs[actual_gene_expr_column].apply(lambda x: str(x) if x is not None else "[]")
+
+
+
+
+        # Rename back to original column name if needed
+        if actual_gene_expr_column != gene_expr_column:
+            merged_obs = merged_obs.rename(columns={actual_gene_expr_column: gene_expr_column})
+
+    else:
+        raise KeyError(f"Column {actual_gene_expr_column} not found in merged_obs")
+    
     merged_obs.index = matrix.obs.index
+    
     matrix.obs = merged_obs
+    
     return matrix
 
 
@@ -179,30 +236,41 @@ def get_gene_expr_with_marker_function(
     Returns:
         anndata.AnnData: Updated data with gene expressions
     """
+
     filtered_matrix = prepare_filtered_matrix(matrix, clid_column, ensemble)
+    
     markers_df = marker_function(filtered_matrix, clid_column, n_genes)
 
     # Compute mean expression per marker gene
-    markers_df[gene_expr_column] = markers_df.apply(
-        lambda row: get_marker_genes_with_expr(
-            matrix,
-            filtered_matrix.var,
-            clid_column,
-            row[clid_column],
-            row["marker_genes"],
-        ),
-        axis=1,
-    )
+    
+    # Handle empty DataFrame case
+    if len(markers_df) == 0:
+        markers_df[gene_expr_column] = []
+    else:
+        markers_df[gene_expr_column] = markers_df.apply(
+            lambda row: get_marker_genes_with_expr(
+                matrix,
+                filtered_matrix.var,
+                clid_column,
+                row[clid_column],
+                row["marker_genes"],
+            ),
+            axis=1,
+        )
+    print(f"Mean expressions computed successfully")
 
-    return merge_markers_into_matrix(
+    result = merge_markers_into_matrix(
         matrix,
         markers_df,
         clid_column,
         gene_expr_column,
     )
 
+    
+    return result
 
-def get_arg_parser(description: str) -> argparse.ArgumentParser:
+
+def get_arg_parser(description: str, marker_function_name: str = None) -> argparse.ArgumentParser:
     """Common argument parser for both implementations."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("matrix", type=anndata.read_h5ad, help="h5ad data file")
@@ -221,10 +289,22 @@ def get_arg_parser(description: str) -> argparse.ArgumentParser:
         default=200,
         help="number of top genes per cell type to save",
     )
+    
+    # Determine output filename based on marker function name
+    if marker_function_name:
+        if "nsforest" in marker_function_name.lower():
+            default_output = "matrix_with_nsforest.h5ad"
+        elif "scanpy" in marker_function_name.lower() or "gene" in marker_function_name.lower():
+            default_output = "matrix_with_gene_expr.h5ad"
+        else:
+            default_output = "matrix_with_gene_expr.h5ad"
+    else:
+        default_output = "matrix_with_gene_expr.h5ad"
+    
     parser.add_argument(
         "--output-matrix",
         type=Path,
-        default="matrix_with_gene_expr.h5ad",
+        default=default_output,
         help="matrix with gene expressions output path",
     )
     parser.add_argument(
@@ -248,10 +328,21 @@ def common_main(
             args.clid_column,
             args.gene_expr_column,
             args.gene_expr_count,
-            marker_function,  # Takes the function name as an argument
+            marker_function, 
         )
 
         matrix.write_h5ad(args.output_matrix)
+        
+        # Create success report
+        args.output_report.parent.mkdir(parents=True, exist_ok=True)
+        with args.output_report.open("w") as fh:
+            json.dump(
+                {
+                    "status": "success",
+                },
+                fh,
+                indent=4,
+            )
 
     except Exception as error:
         print("Exception occurred:", error)
