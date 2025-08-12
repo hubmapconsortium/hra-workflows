@@ -115,8 +115,7 @@ steps:
         ${ return { report: inputs.reports[inputs.reports.length - 1] }; }
     in:
       reports:
-        #source: [annotate/report, gene_expression/report, nsforest/report]
-        source: [annotate/report, nsforest/report]
+        source: [annotate/report, gene_expression/report, nsforest/report]
         pickValue: all_non_null
     out: [report]
 
@@ -124,7 +123,7 @@ steps:
     run: ./collect-files.cwl
     in:
       files:
-        source: [summarize/summary, summarize/annotations, selectReport/report]
+        source: [check_result/matrix_or_null, summarize/summary, summarize/annotations, selectReport/report]
         pickValue: all_non_null
       outputDirectory:
         source: algorithm
