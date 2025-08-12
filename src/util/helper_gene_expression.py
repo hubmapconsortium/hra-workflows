@@ -280,8 +280,14 @@ def get_arg_parser(description: str, marker_function_name: str = None) -> argpar
         help="Ensemble lookup data csv",
     )
     parser.add_argument("--clid-column", default="clid", help="Column with cell id")
+    
+    # Determine defaults based on marker function name
+    is_nsforest = marker_function_name and "nsforest" in marker_function_name.lower()
+    default_gene_expr_column = "nsforest_gene_expr" if is_nsforest else "gene_expr"
+    default_output = "matrix_with_nsforest.h5ad" if is_nsforest else "matrix_with_gene_expr.h5ad"
+    
     parser.add_argument(
-        "--gene-expr-column", default="gene_expr", help="Column for gene_expr"
+        "--gene-expr-column", default=default_gene_expr_column, help="Column for gene_expr"
     )
     parser.add_argument(
         "--gene-expr-count",
@@ -289,17 +295,6 @@ def get_arg_parser(description: str, marker_function_name: str = None) -> argpar
         default=200,
         help="number of top genes per cell type to save",
     )
-    
-    # Determine output filename based on marker function name
-    if marker_function_name:
-        if "nsforest" in marker_function_name.lower():
-            default_output = "matrix_with_nsforest.h5ad"
-        elif "scanpy" in marker_function_name.lower() or "gene" in marker_function_name.lower():
-            default_output = "matrix_with_gene_expr.h5ad"
-        else:
-            default_output = "matrix_with_gene_expr.h5ad"
-    else:
-        default_output = "matrix_with_gene_expr.h5ad"
     
     parser.add_argument(
         "--output-matrix",
