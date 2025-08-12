@@ -31,6 +31,7 @@ def unique_rows_to_summary_rows(
     clid_column: str,
     label_column: str,
     gene_expr_column: str,
+    nsforest_gene_expr_column: str,
     counts_column="count",
 ) -> t.List[dict]:
     """Converts a data frame with unique CLIDs rows into cell summary rows.
@@ -40,20 +41,22 @@ def unique_rows_to_summary_rows(
         clid_column (str): Column with CLIDs
         label_column (str): Column with labels
         gene_expr_column (str): Column with gene expressions
+        nsforest_gene_expr_column (str, optional): Column with NSForest gene expressions
         counts_column (str, optional): Column with the total counts. Defaults to "count".
 
     Returns:
         t.List[dict]: A cell summary for each row in the source data
     """
-    columns = [clid_column, label_column, gene_expr_column, counts_column]
-    df = unique[columns].rename(
-        columns={
-            clid_column: "cell_id",
-            label_column: "cell_label",
-            gene_expr_column: "gene_expr",
-            counts_column: "count",
-        }
-    )
+    columns = [clid_column, label_column, gene_expr_column, nsforest_gene_expr_column, counts_column]
+    column_mapping = {
+        clid_column: "cell_id",
+        label_column: "cell_label",
+        gene_expr_column: "gene_expr",
+        nsforest_gene_expr_column: "nsforest_gene_expr",
+        counts_column: "count",
+    }
+    
+    df = unique[columns].rename(columns=column_mapping)
 
     df["@type"] = "CellSummaryRow"
     df["cell_id"] = df["cell_id"].map(create_cell_id)
@@ -63,6 +66,12 @@ def unique_rows_to_summary_rows(
         .astype(object)
         .apply(lambda x: [] if pd.isna(x) else json.loads(x))
     )
+    df["nsforest_gene_expr"] = (
+        df["nsforest_gene_expr"]
+        .astype(object)
+        .apply(lambda x: [] if pd.isna(x) else json.loads(x))
+    ) 
+    
     return df.to_dict("records")
 
 
@@ -73,12 +82,16 @@ def main(args: argparse.Namespace):
         args (argparse.Namespace):
             CLI arguments, must contain "matrix", "annotation_method",
             "cell_id_column", "cell_label_column", "gene_expr_column",
-            "cell_source, "jsonld_context", "output", and
+            "nsforest_gene_expr_column", "cell_source, "jsonld_context", "output", and
             "annotations_output"
     """
     unique_rows = get_unique_rows_with_counts(args.matrix, args.cell_id_column)
     summary_rows = unique_rows_to_summary_rows(
-        unique_rows, args.cell_id_column, args.cell_label_column, args.gene_expr_column
+        unique_rows, 
+        args.cell_id_column, 
+        args.cell_label_column, 
+        args.gene_expr_column,
+        args.nsforest_gene_expr_column
     )
     summary = {
         "@type": "CellSummary",
@@ -118,6 +131,11 @@ def _get_arg_parser():
         "--gene-expr-column",
         default="gene_expr",
         help="Gene expression column",
+    )
+    parser.add_argument(
+        "--nsforest-gene-expr-column",
+        default="nsforest_gene_expr",
+        help="NSForest gene expression column",
     )
     parser.add_argument("--cell-source", help="Cell source. Must be an IRI.")
     parser.add_argument(

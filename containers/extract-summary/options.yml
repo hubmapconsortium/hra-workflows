@@ -22,6 +22,11 @@ fields:
     doc: Gene expression column
     inputBinding:
       prefix: --gene-expr-column
+  nsforestGeneExprColumn:
+    type: string?
+    doc: NSForest gene expression column
+    inputBinding:
+      prefix: --nsforest-gene-expr-column
   cellSource:
     type: string?
     doc: Cell source. Must be an IRI.
