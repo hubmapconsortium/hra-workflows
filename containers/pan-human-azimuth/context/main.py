@@ -2,7 +2,6 @@ import csv
 import logging
 import typing as t
 from pathlib import Path
-
 from panhumanpy import AzimuthNN
 import pandas
 import scanpy
@@ -20,7 +19,9 @@ class PanHumanAzimuthOptions(t.TypedDict):
     query_layers_key: t.Optional[str]
 
 
-class PanHumanAzimuthAlgorithm(Algorithm[PanHumanAzimuthOrganMetadata, PanHumanAzimuthOptions]):
+class PanHumanAzimuthAlgorithm(
+    Algorithm[PanHumanAzimuthOrganMetadata, PanHumanAzimuthOptions]
+):
     def __init__(self):
         super().__init__("azimuth_fine", is_pan_organ=True)
 
@@ -32,19 +33,24 @@ class PanHumanAzimuthAlgorithm(Algorithm[PanHumanAzimuthOrganMetadata, PanHumanA
         options: PanHumanAzimuthOptions,
     ) -> RunResult:
         """Annotate data using pan-human-azimuth."""
+
         data = scanpy.read_h5ad(matrix)
         data = set_data_layer(data, options["query_layers_key"])
         data = self.clean(data)
         data = self.normalize(data)
         data, var_names = self.normalize_var_names(data, options)
 
-        azimuth = AzimuthNN(data)
+        azimuth = AzimuthNN(data, model_version="v1")
         azimuth.azimuth_refine()
         data = azimuth.pack_adata()
 
         data.var_names = t.cast(t.Any, var_names)
 
-        return {"data": data, "organ_id": "UBERON:0013702", "organ_level": "body_proper"}
+        return {
+            "data": data,
+            "organ_id": "UBERON:0013702",
+            "organ_level": "body_proper",
+        }
 
     def clean(self, data: scanpy.AnnData) -> scanpy.AnnData:
         """Cleans the data removing any incompatible preprocessing that may exist.
