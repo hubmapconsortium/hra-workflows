@@ -38,7 +38,7 @@ class PanHumanAzimuthAlgorithm(Algorithm[PanHumanAzimuthOrganMetadata, PanHumanA
         data = self.normalize(data)
         data, var_names = self.normalize_var_names(data, options)
 
-        azimuth = AzimuthNN(data)
+        azimuth = AzimuthNN(data,model_version="v1")
         azimuth.azimuth_refine()
         data = azimuth.pack_adata()
 
