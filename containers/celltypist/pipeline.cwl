@@ -30,7 +30,7 @@ outputs:
   annotations:
     type: File
     outputBinding:
-      glob: annotations.csv
+      glob: annotations.csv.gz
   annotated_matrix:
     type: File
     outputBinding:
