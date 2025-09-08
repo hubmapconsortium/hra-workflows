@@ -74,7 +74,7 @@ class AlgorithmReport:
         """
         matrix = self.data
         if matrix is not None:
-            matrix.obs.to_csv(self.annotations)
+            matrix.obs.to_csv(self.annotations, compression="gzip")
             matrix.write_h5ad(self.matrix)
 
     def save_report(self):

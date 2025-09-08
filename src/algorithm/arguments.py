@@ -34,7 +34,7 @@ def add_common_arguments(
     parser.add_argument(
         "--output-annotations",
         type=Path,
-        default="annotations.csv",
+        default="annotations.csv.gz",
         help="Annotations csv output path",
     )
     parser.add_argument(

@@ -105,7 +105,9 @@ def main(args: argparse.Namespace):
     graph: list = context.setdefault("@graph", [])
     graph.append(summary)
 
-    args.matrix.obs.to_csv(args.annotations_output)
+    args.matrix.obs.to_csv(args.annotations_output, compression="gzip")
+
+    
     json.dump(context, args.output, indent=2)
 
 
@@ -153,8 +155,8 @@ def _get_arg_parser():
     )
     parser.add_argument(
         "--annotations-output",
-        type=argparse.FileType("w"),
-        default="annotations.csv",
+        type=str,
+        default="annotations.csv.gz",
         help="Matrix obs",
     )
 

@@ -25,7 +25,7 @@ outputs:
   annotations:
     type: File
     outputBinding:
-      glob: annotations.csv
+      glob: "annotations.csv.gz"
   summary:
     type: File
     outputBinding:
