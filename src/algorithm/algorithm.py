@@ -168,6 +168,7 @@ class Algorithm(t.Generic[OrganMetadata, Options], abc.ABC):
         data.uns["hra_crosswalking"] = {
             "organ_id": result.get("organ_id", organ),
             "organ_level": result["organ_level"],
+            "fallback_level": metadata.get("fallback_level", [])
         }
 
         return data

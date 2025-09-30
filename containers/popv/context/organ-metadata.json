@@ -35,12 +35,15 @@
   "UBERON:0002167": "UBERON:0002048",
   "UBERON:0002048": {
     "model": "Lung",
-    "organ_level": "lung"
+    "organ_level": "lung",
+    "fallback_level": ["respiratory system"]
   },
+  "UBERON:0000029": "UBERON:0002509",
   "UBERON:0002509": {
     "model": "Lymph_Node",
     "organ_level": "mesenteric lymph node",
-    "comment": "Generic lymph node (UBERON:0000029) is redirected here"
+    "comment": "Generic lymph node (UBERON:0000029) is redirected here",
+    "fallback_level": ["lymph node"]
   },
   "UBERON:0001911": {
     "model": "Mammary",
@@ -53,7 +56,8 @@
   },
   "UBERON:0002367": {
     "model": "Prostate",
-    "organ_level": "prostate gland"
+    "organ_level": "prostate gland",
+    "fallback_level": ["male reproductive system"]
   },
   "UBERON:0001044": {
     "model": "Salivary Gland",
@@ -61,7 +65,9 @@
   },
   "UBERON:0002097": {
     "model": "Skin",
-    "organ_level": "skin"
+    "organ_level": "skin",
+    "fallback_level": ["skin of body"]
+    
   },
   "UBERON:0002108": {
     "model": "Small_Intestine",
@@ -77,7 +83,7 @@
   },
   "UBERON:0001723": {
     "model": "Tongue",
-    "organ_level": ""
+    "organ_level": "tongue"
   },
   "UBERON:0003126": {
     "model": "Trachea",

@@ -2,7 +2,6 @@ import argparse
 import csv
 import typing as t
 from pathlib import Path
-
 import anndata
 import pandas as pd
 
@@ -23,6 +22,7 @@ def crosswalk(
     table_clid_column: str,
     table_clid_label_column: str,
     table_match_column: str,
+    fallback_levels: t.List[str] = None,
 ) -> anndata.AnnData:
     """Crosswalks the data adding CLIDs and match types using a crosswalk table.
 
@@ -40,6 +40,7 @@ def crosswalk(
         table_clid_column (str): Column storing CLIDs
         table_clid_label_column (str): Column storing CL labels
         table_match_column (str): Column storing match type
+        fallback_levels (t.List[str]): List of fallback levels to try
 
     Returns:
         anndata.AnnData: Crosswalked data with CLIDs and match type added
@@ -49,7 +50,9 @@ def crosswalk(
         table_match_column: data_match_column,
     }
     matrix = _filter_invalid_rows(matrix, data_label_column)
-    table = _filter_crosswalk_table(
+
+    original_table = table
+    table_default_level = _filter_crosswalk_table(
         table,
         organ_id,
         organ_level,
@@ -59,17 +62,85 @@ def crosswalk(
     )
     merged_obs = (
         matrix.obs.merge(
-            table, left_on=data_label_column, right_on=table_label_column, how="left"
+            table_default_level, left_on=data_label_column, right_on=table_label_column, how="left"
         )
         .drop(columns=table_label_column)
         .rename(columns=column_map)
     )
     merged_obs.index = matrix.obs.index
 
-    default_clids = merged_obs[data_label_column].map(create_temp_asctb_id)
-    _set_defaults(merged_obs, data_clid_column, default_clids)
-    _set_defaults(merged_obs, table_clid_label_column, merged_obs[data_label_column])
-    _set_defaults(merged_obs, data_match_column, "skos:exactMatch")
+    # Check if fallback_levels is empty
+    if fallback_levels is None or len(fallback_levels) == 0:
+        _assign_temp_codes(
+            merged_obs,
+            data_label_column,
+            data_clid_column,
+            table_clid_label_column,
+            data_match_column,
+        )
+    else:
+        print(f"DEBUG: Starting fallback processing with {len(fallback_levels)} levels")
+
+        for i, fallback_level in enumerate(fallback_levels):
+            print(f"DEBUG: Trying fallback level {i+1}/{len(fallback_levels)}: {fallback_level}")
+            
+            # Check if there are still unmatched cells
+            unmatched_mask = merged_obs[data_clid_column].isna()
+            if not unmatched_mask.any():
+                print(f"DEBUG: All cells matched, stopping at level {i+1}")
+                break
+
+            unmatched_cells = merged_obs[unmatched_mask]
+            print(f"DEBUG: {unmatched_mask.sum()} unmatched cells remaining")
+
+            # Filter crosswalk table for this fallback level
+            fallback_table = _filter_crosswalk_table(
+                original_table,
+                organ_id,
+                fallback_level,
+                table_organ_id_column,
+                table_organ_level_column,
+                table_label_column,
+            )
+
+            print(f"DEBUG: Fallback table has {len(fallback_table)} rows")
+
+            if not fallback_table.empty:
+                # Join only unmatched cells with the fallback table
+                fallback_merged = unmatched_cells.merge(
+                    fallback_table,
+                    left_on=data_label_column,
+                    right_on=table_label_column,
+                    how="left"
+                )
+
+                # Update the main dataframe with successful matches
+                matched_fallback_mask = fallback_merged[table_clid_column].notna()
+                matches_found = matched_fallback_mask.sum()
+                print(f"DEBUG: Found {matches_found} matches in fallback level")
+
+                if matches_found > 0:
+                    matched_indices = fallback_merged[matched_fallback_mask].index
+
+                    # Update the main dataframe
+                    merged_obs.loc[matched_indices, data_clid_column] = fallback_merged.loc[matched_fallback_mask, table_clid_column]
+                    merged_obs.loc[matched_indices, data_match_column] = fallback_merged.loc[matched_fallback_mask, table_match_column]
+                    merged_obs.loc[matched_indices, table_clid_label_column] = fallback_merged.loc[matched_fallback_mask, table_clid_label_column]
+
+                    print(f"DEBUG: Updated {matches_found} cells with fallback matches")
+            else:
+                print(f"DEBUG: No data for fallback level {fallback_level}, skipping")
+
+        final_unmatched_mask = merged_obs[data_clid_column].isna()
+        if final_unmatched_mask.any():
+            print(f"DEBUG: Assigning TEMP codes to {final_unmatched_mask.sum()} remaining unmatched cells")
+            _assign_temp_codes(
+                merged_obs,
+                data_label_column,
+                data_clid_column,
+                table_clid_label_column,
+                data_match_column,
+            )
 
     result = matrix.copy()
     result.obs = merged_obs
@@ -130,6 +201,28 @@ def _set_defaults(
         defaults (t.Union[pd.Series, str]): Default values
     """
     obs.loc[obs[column].isna(), column] = defaults
+
+
+def _assign_temp_codes(
+    merged_obs: pd.DataFrame,
+    data_label_column: str,
+    data_clid_column: str,
+    table_clid_label_column: str,
+    data_match_column: str,
+) -> None:
+    """Assign TEMP codes to unmatched cells.
+
+    Args:
+        merged_obs (pd.DataFrame): Data frame with merged observations
+        data_label_column (str): Column with annotation labels
+        data_clid_column (str): Column to store CLIDs in
+        table_clid_label_column (str): Column to store CL labels in
+        data_match_column (str): Column to store match type in
+    """
+    default_clids = merged_obs[data_label_column].map(create_temp_asctb_id)
+    _set_defaults(merged_obs, data_clid_column, default_clids)
+    _set_defaults(merged_obs, table_clid_label_column, merged_obs[data_label_column])
+    _set_defaults(merged_obs, data_match_column, "skos:exactMatch")
 
 
 def _fix_obs_columns_dtype(matrix: anndata.AnnData):
@@ -217,6 +310,8 @@ def main(args: argparse.Namespace):
             "output_matrix"
     """
     metadata = args.matrix.uns["hra_crosswalking"]
+
+    # Always do the first crosswalk with the default organ level
     matrix = crosswalk(
         args.matrix,
         str(metadata["organ_id"]),
@@ -231,7 +326,9 @@ def main(args: argparse.Namespace):
         args.crosswalk_table_clid_column,
         args.crosswalk_table_clid_label_column,
         args.crosswalk_table_match_column,
+        metadata.get("fallback_level", []),
     )
+
     matrix.write_h5ad(args.output_matrix)
 
 
