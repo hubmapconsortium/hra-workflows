@@ -120,12 +120,13 @@ def crosswalk(
                 print(f"DEBUG: Found {matches_found} matches in fallback level")
 
                 if matches_found > 0:
-                    matched_indices = fallback_merged[matched_fallback_mask].index
+                    # Get the original indices from the matched rows
+                    matched_indices = fallback_merged.index[matched_fallback_mask]
 
                     # Update the main dataframe
-                    merged_obs.loc[matched_indices, data_clid_column] = fallback_merged.loc[matched_fallback_mask, table_clid_column]
-                    merged_obs.loc[matched_indices, data_match_column] = fallback_merged.loc[matched_fallback_mask, table_match_column]
-                    merged_obs.loc[matched_indices, table_clid_label_column] = fallback_merged.loc[matched_fallback_mask, table_clid_label_column]
+                    merged_obs.loc[matched_indices, data_clid_column] = fallback_merged.loc[matched_fallback_mask, table_clid_column].values
+                    merged_obs.loc[matched_indices, data_match_column] = fallback_merged.loc[matched_fallback_mask, table_match_column].values
+                    merged_obs.loc[matched_indices, table_clid_label_column] = fallback_merged.loc[matched_fallback_mask, table_clid_label_column].values
 
                     print(f"DEBUG: Updated {matches_found} cells with fallback matches")
             else:
