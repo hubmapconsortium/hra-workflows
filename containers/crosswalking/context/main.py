@@ -60,6 +60,9 @@ def crosswalk(
         table_organ_level_column,
         table_label_column,
     )
+
+    matrix.obs[data_label_column] = matrix.obs[data_label_column].str.rstrip() # remove trailing whitespace
+
     merged_obs = (
         matrix.obs.merge(
             table_default_level, left_on=data_label_column, right_on=table_label_column, how="left"
@@ -79,19 +82,17 @@ def crosswalk(
             data_match_column,
         )
     else:
-        print(f"DEBUG: Starting fallback processing with {len(fallback_levels)} levels")
-
         for i, fallback_level in enumerate(fallback_levels):
-            print(f"DEBUG: Trying fallback level {i+1}/{len(fallback_levels)}: {fallback_level}")
+            # Re-evaluate unmatched cells after previous iteration updates
+            unmatched_mask = merged_obs[data_clid_column].isna()
+            unmatched_cells = merged_obs[unmatched_mask].copy()
+            # Remove data_clid_column and data_match_column
+            unmatched_cells = unmatched_cells.drop(columns=[data_clid_column, data_match_column])
+            unmatched_cells['original_index'] = unmatched_cells.index
             
             # Check if there are still unmatched cells
-            unmatched_mask = merged_obs[data_clid_column].isna()
-            if not unmatched_mask.any():
-                print(f"DEBUG: All cells matched, stopping at level {i+1}")
+            if unmatched_cells.empty:
                 break
-
-            unmatched_cells = merged_obs[unmatched_mask]
-            print(f"DEBUG: {unmatched_mask.sum()} unmatched cells remaining")
 
             # Filter crosswalk table for this fallback level
             fallback_table = _filter_crosswalk_table(
@@ -103,38 +104,34 @@ def crosswalk(
                 table_label_column,
             )
 
-            print(f"DEBUG: Fallback table has {len(fallback_table)} rows")
-
             if not fallback_table.empty:
-                # Join only unmatched cells with the fallback table
-                fallback_merged = unmatched_cells.merge(
-                    fallback_table,
-                    left_on=data_label_column,
-                    right_on=table_label_column,
-                    how="left"
+                # Join unmatched cells with fallback table
+                fallback_merged = (
+                    unmatched_cells.merge(
+                        fallback_table,
+                        left_on=data_label_column,
+                        right_on=table_label_column,
+                        how="left"
+                    )
+                    .drop(columns=table_label_column)
+                    .rename(columns=column_map)
                 )
 
-                # Update the main dataframe with successful matches
-                matched_fallback_mask = fallback_merged[table_clid_column].notna()
-                matches_found = matched_fallback_mask.sum()
-                print(f"DEBUG: Found {matches_found} matches in fallback level")
+                # Update merged_obs with successful matches
+                clid_col = fallback_merged[data_clid_column]
+                non_null_matches = fallback_merged[clid_col.notna()]
+                matches_found = len(non_null_matches)
 
                 if matches_found > 0:
-                    # Get the original indices from the matched rows
-                    matched_indices = fallback_merged.index[matched_fallback_mask]
+                    # Use the original indices from the 'original_index' column
+                    matched_indices = non_null_matches['original_index']
 
-                    # Update the main dataframe
-                    merged_obs.loc[matched_indices, data_clid_column] = fallback_merged.loc[matched_fallback_mask, table_clid_column].values
-                    merged_obs.loc[matched_indices, data_match_column] = fallback_merged.loc[matched_fallback_mask, table_match_column].values
-                    merged_obs.loc[matched_indices, table_clid_label_column] = fallback_merged.loc[matched_fallback_mask, table_clid_label_column].values
-
-                    print(f"DEBUG: Updated {matches_found} cells with fallback matches")
-            else:
-                print(f"DEBUG: No data for fallback level {fallback_level}, skipping")
+                    # Update merged_obs with the new matches
+                    merged_obs.loc[matched_indices, data_clid_column] = non_null_matches[data_clid_column].values
+                    merged_obs.loc[matched_indices, data_match_column] = non_null_matches[data_match_column].values
 
         final_unmatched_mask = merged_obs[data_clid_column].isna()
         if final_unmatched_mask.any():
-            print(f"DEBUG: Assigning TEMP codes to {final_unmatched_mask.sum()} remaining unmatched cells")
             _assign_temp_codes(
                 merged_obs,
                 data_label_column,
