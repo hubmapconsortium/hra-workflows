@@ -105,11 +105,11 @@ def main(args: argparse.Namespace):
     graph: list = context.setdefault("@graph", [])
     graph.append(summary)
 
-    args.matrix.obs.to_csv(args.annotations_output, compression="gzip")
-
-    
     json.dump(context, args.output, indent=2)
 
+    exclude_columns = [args.gene_expr_column, args.nsforest_gene_expr_column]
+    obs_to_save = args.matrix.obs.drop(columns=exclude_columns, errors="ignore")
+    obs_to_save.to_csv(args.annotations_output, compression="gzip")
 
 def _get_arg_parser():
     parser = argparse.ArgumentParser(
