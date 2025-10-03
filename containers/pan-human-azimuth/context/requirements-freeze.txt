@@ -89,7 +89,7 @@ overrides==7.7.0
 packaging==25.0
 pandas==2.2.3
 pandocfilters==1.5.1
-panhumanpy @ git+https://github.com/satijalab/panhumanpy.git@d4c69410e7dc23213b7a848c8c1d8274e333272a
+panhumanpy @ git+https://github.com/satijalab/panhumanpy.git@b334e530ba1e56250bdfde296c9c92454c7f1cc7
 parso==0.8.4
 patsy==1.0.1
 pexpect==4.9.0
