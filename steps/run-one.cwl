@@ -51,7 +51,7 @@ steps:
       matrix: matrix
       organ: organ
       algorithm: algorithm
-    out: [annotations, annotated_matrix, report]
+    out: [annotated_matrix, report]
 
   check_result:
     run: ./check_annotation_report.cwl
@@ -68,7 +68,7 @@ steps:
       options:
         source: algorithm
         valueFrom: $(self.crosswalk || {})
-    out: [matrix_with_crosswalking]
+    out: [annotations, matrix_with_crosswalking]
 
   gene_expression:
     run: ../containers/gene-expression/pipeline.cwl
@@ -98,7 +98,7 @@ steps:
       options:
         source: algorithm
         valueFrom: $(self.summarize || {})
-    out: [summary, annotations]
+    out: [summary]
 
   selectReport:
     run:
@@ -123,7 +123,7 @@ steps:
     run: ./collect-files.cwl
     in:
       files:
-        source: [check_result/matrix_or_null, summarize/summary, summarize/annotations, selectReport/report]
+        source: [check_result/matrix_or_null, summarize/summary, crosswalk/annotations, selectReport/report]
         pickValue: all_non_null
       outputDirectory:
         source: algorithm

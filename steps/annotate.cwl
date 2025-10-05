@@ -29,15 +29,6 @@ inputs:
           frmatch: ../containers/frmatch/options.yml#options?
 
 outputs:
-  annotations:
-    type: File
-    outputSource:
-      - azimuth/annotations
-      - celltypist/annotations
-      - popv/annotations
-      - pan-human-azimuth/annotations
-      - frmatch/annotations
-    pickValue: first_non_null
   annotated_matrix:
     type: File
     outputSource:
@@ -67,7 +58,7 @@ steps:
       options:
         source: algorithm
         valueFrom: $(inputs.options.azimuth || null)
-    out: [annotations, annotated_matrix, report]
+    out: [annotated_matrix, report]
   
   celltypist:
     run: ../containers/celltypist/pipeline.cwl
@@ -78,7 +69,7 @@ steps:
       options:
         source: algorithm
         valueFrom: $(inputs.options.celltypist || null)
-    out: [annotations, annotated_matrix, report]
+    out: [annotated_matrix, report]
 
   popv:
     run: ../containers/popv/pipeline.cwl
@@ -89,7 +80,7 @@ steps:
       options:
         source: algorithm
         valueFrom: $(inputs.options.popv || null)
-    out: [annotations, annotated_matrix, report]
+    out: [annotated_matrix, report]
 
   pan-human-azimuth:
     run: ../containers/pan-human-azimuth/pipeline.cwl
@@ -100,7 +91,7 @@ steps:
       options:
         source: algorithm
         valueFrom: $(inputs.options['pan-human-azimuth'] || null)
-    out: [annotations, annotated_matrix, report]
+    out: [annotated_matrix, report]
   
   frmatch:
     run: ../containers/frmatch/pipeline.cwl
@@ -111,4 +102,4 @@ steps:
       options:
         source: algorithm
         valueFrom: $(inputs.options.frmatch || null)
-    out: [annotations, annotated_matrix, report]
+    out: [annotated_matrix, report]

@@ -22,10 +22,6 @@ inputs:
   options: ./options.yml#options
 
 outputs:
-  annotations:
-    type: File
-    outputBinding:
-      glob: annotations.csv.gz
   summary:
     type: File
     outputBinding:

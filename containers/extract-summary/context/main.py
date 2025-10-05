@@ -107,10 +107,6 @@ def main(args: argparse.Namespace):
 
     json.dump(context, args.output, indent=2)
 
-    exclude_columns = [args.gene_expr_column, args.nsforest_gene_expr_column]
-    obs_to_save = args.matrix.obs.drop(columns=exclude_columns, errors="ignore")
-    obs_to_save.to_csv(args.annotations_output, compression="gzip")
-
 def _get_arg_parser():
     parser = argparse.ArgumentParser(
         description="Extract cell summary from annotations"
@@ -152,12 +148,6 @@ def _get_arg_parser():
         type=argparse.FileType("w"),
         default="summary.jsonld",
         help="Output file",
-    )
-    parser.add_argument(
-        "--annotations-output",
-        type=str,
-        default="annotations.csv.gz",
-        help="Matrix obs",
     )
 
     return parser

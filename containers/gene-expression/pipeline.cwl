@@ -12,6 +12,8 @@ requirements:
 baseCommand: python
 arguments:
   - /main.py
+  - --output-report
+  - report_gene_expr.json
 
 inputs:
   matrix:
@@ -29,4 +31,5 @@ outputs:
   report:
     type: File?
     outputBinding:
-      glob: report.json
+      glob: report_gene_expr.json
+  

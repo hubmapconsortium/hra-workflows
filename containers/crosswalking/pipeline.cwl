@@ -22,6 +22,10 @@ inputs:
   options: ./options.yml#options
 
 outputs:
+  annotations:
+    type: File
+    outputBinding:
+      glob: annotations.csv.gz
   matrix_with_crosswalking:
     type: File
     outputBinding:

@@ -27,10 +27,6 @@ inputs:
   options: ./options.yml#options
 
 outputs:
-  annotations:
-    type: File
-    outputBinding:
-      glob: annotations.csv.gz
   annotated_matrix:
     type: File
     outputBinding:

@@ -328,6 +328,7 @@ def main(args: argparse.Namespace):
     )
 
     matrix.write_h5ad(args.output_matrix)
+    matrix.obs.to_csv(args.annotations_output, compression="gzip")
 
 
 def _get_arg_parser() -> argparse.ArgumentParser:
@@ -382,6 +383,12 @@ def _get_arg_parser() -> argparse.ArgumentParser:
         type=Path,
         default="matrix_with_crosswalking.h5ad",
         help="matrix with crosswalking output path",
+    )
+    parser.add_argument(
+        "--annotations-output",
+        type=str,
+        default="annotations.csv.gz",
+        help="Matrix obs",
     )
 
     return parser
