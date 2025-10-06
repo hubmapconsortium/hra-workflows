@@ -2,7 +2,6 @@ import typing as t
 import pandas as pd
 import anndata
 from nsforest import ns, nsforesting
-from pathlib import Path
 
 from src.util.helper_gene_expression import get_arg_parser, common_main
 
@@ -31,7 +30,6 @@ def format_nsforest_markers_df(df: pd.DataFrame, cluster_header: str) -> pd.Data
     # Keep the original cluster_header values
     df = df[[cluster_header, "marker_genes"]].copy()
 
-    
     return df
 
 
@@ -48,21 +46,14 @@ def get_marker_nsforest(
     Returns:
         pd.DataFrame: DataFrame with columns [cluster_header, marker_genes]
     """
-    adata = matrix.copy()
-
-
-
-    # Check if we have enough cells per cell type
-    cell_counts = adata.obs[cluster_header].value_counts()
 
     try:
-
         # NSForest preprocessing
-        adata = ns.pp.prep_medians(adata, cluster_header)
-        adata = ns.pp.prep_binary_scores(adata, cluster_header)
+        matrix = ns.pp.prep_medians(matrix, cluster_header)
+        matrix = ns.pp.prep_binary_scores(matrix, cluster_header)
 
         markers = nsforesting.NSForest(
-            adata,
+            matrix,
             cluster_header,
             save=False,
             save_supplementary=False,
@@ -70,18 +61,15 @@ def get_marker_nsforest(
             outputfilename_prefix="nsforest",
         )
 
-
         if isinstance(markers, pd.DataFrame):
             df = markers.copy()
             df = df.rename(columns={"clusterName": cluster_header})
-
         else:
             df = pd.DataFrame(markers)
             df = df.rename(columns={"clusterName": cluster_header})
 
         # Format into markers dataframe using the same structure as gene-expression
         markers_df = format_nsforest_markers_df(df, cluster_header)
-        
 
         return markers_df[[cluster_header, "marker_genes"]]
     
