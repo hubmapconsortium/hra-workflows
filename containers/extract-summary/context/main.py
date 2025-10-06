@@ -56,22 +56,28 @@ def unique_rows_to_summary_rows(
         counts_column: "count",
     }
     
+    # Only keep columns that exist in the DataFrame
+    columns = [col for col in columns if col in unique.columns]
+    column_mapping = {k: v for k, v in column_mapping.items() if k in columns}
+
     df = unique[columns].rename(columns=column_mapping)
 
     df["@type"] = "CellSummaryRow"
     df["cell_id"] = df["cell_id"].map(create_cell_id)
     df["percentage"] = df["count"] / df["count"].sum()
-    df["gene_expr"] = (
-        df["gene_expr"]
-        .astype(object)
-        .apply(lambda x: [] if pd.isna(x) else json.loads(x))
-    )
-    df["nsforest_gene_expr"] = (
-        df["nsforest_gene_expr"]
-        .astype(object)
-        .apply(lambda x: [] if pd.isna(x) else json.loads(x))
-    ) 
-    
+    if "gene_expr" in columns:
+        df["gene_expr"] = (
+            df["gene_expr"]
+            .astype(object)
+            .apply(lambda x: [] if pd.isna(x) else json.loads(x))
+        )
+    if "nsforest_gene_expr" in columns:
+        df["nsforest_gene_expr"] = (
+            df["nsforest_gene_expr"]
+            .astype(object)
+            .apply(lambda x: [] if pd.isna(x) else json.loads(x))
+        )
+
     return df.to_dict("records")
 
 
