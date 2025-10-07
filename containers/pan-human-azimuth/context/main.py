@@ -46,6 +46,8 @@ class PanHumanAzimuthAlgorithm(
 
         data.var_names = t.cast(t.Any, var_names)
 
+        data = data[data.obs[self.prediction_column].isin([False, "False", "Unassigned"]) == False]
+
         return {
             "data": data,
             "organ_id": "UBERON:0013702",
