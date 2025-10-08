@@ -76,6 +76,9 @@ class FRmatchAlgorithm(Algorithm[FRmatchOrganMetadata, FRmatchOptions]):
         # Adding annotation to adata_query.obs
         adata_query = self.copy_annotations(adata_query, annotation)
 
+        # Remove unlabeled cells
+        adata_query = adata_query[~adata_query.obs[self.prediction_column].isin([False, "False", "unassigned"])]
+
         return {
             "data": adata_query,
             "model": metadata["model"],

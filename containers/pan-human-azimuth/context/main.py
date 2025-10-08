@@ -46,7 +46,8 @@ class PanHumanAzimuthAlgorithm(
 
         data.var_names = t.cast(t.Any, var_names)
 
-        data = data[data.obs[self.prediction_column].isin([False, "False", "Unassigned"]) == False]
+        # Remove unlabeled cells
+        data = data[~data.obs[self.prediction_column].isin([False, "False", "Unassigned"])]
 
         return {
             "data": data,
