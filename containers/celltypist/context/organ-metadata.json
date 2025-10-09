@@ -5,34 +5,42 @@
   "UBERON:0002167": "UBERON:0002048",
   "UBERON:0002048": {
     "model": "Human_Lung_Atlas.pkl",
-    "alt_model": "Cells_Lung_Airway.pkl"
+    "alt_model": "Cells_Lung_Airway.pkl",
+    "fallback_level": ["lung_L1"]
   },
   "UBERON:0002097": {
     "model": "Adult_Human_Skin.pkl"
   },
   "UBERON:0001264": {
-    "model": "Adult_Human_PancreaticIslet.pkl"
+    "model": "Adult_Human_PancreaticIslet.pkl",
+    "fallback_level": ["Islet_of_Langerhans", "pancreas_L1"]
   },
   "UBERON:0000006": {
-    "model": "Adult_Human_PancreaticIslet.pkl"
+    "model": "Adult_Human_PancreaticIslet.pkl",
+    "fallback_level": ["Islet_of_Langerhans", "pancreas_L1"]
   },
   "UBERON:0000947": "UBERON:0000948",
   "UBERON:0000948": {
     "model": "Healthy_Adult_Heart.pkl",
-    "comment": "Aorta (UBERON:0000947) is redirected here"
+    "comment": "Aorta (UBERON:0000947) is redirected here",
+    "fallback_level": ["heart_L1"]
   },
   "UBERON:0002107": {
-    "model": "Healthy_Human_Liver.pkl"
+    "model": "Healthy_Human_Liver.pkl",
+    "fallback_level": ["liver_L1"]
   },
   "UBERON:0002421": {
     "model": "Human_AdultAged_Hippocampus.pkl",
     "alt_model": "Human_Longitudinal_Hippocampus.pkl",
-    "comment": "Not redirecting brain (UBERON:0000955) to here as it is too broad"
+    "comment": "Not redirecting brain (UBERON:0000955) to here as it is too broad",
+    "fallback_level": ["hippocampus_L1"]
   },
   "UBERON:0002108": {
-    "model": "Cells_Intestinal_Tract.pkl"
+    "model": "Cells_Intestinal_Tract.pkl",
+    "fallback_level": ["Small_Intestine", "intestine_L1"]
   },
   "UBERON:0000059": {
-    "model": "Cells_Intestinal_Tract.pkl"
+    "model": "Cells_Intestinal_Tract.pkl",
+    "fallback_level": ["Large_Intestine", "intestine_L1"]
   }
 }
