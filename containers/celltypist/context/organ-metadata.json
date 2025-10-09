@@ -13,11 +13,11 @@
   },
   "UBERON:0001264": {
     "model": "Adult_Human_PancreaticIslet.pkl",
-    "fallback_level": ["pancreas_L1","Islet_of_Langerhans"]
+    "fallback_level": ["Islet_of_Langerhans", "pancreas_L1"]
   },
   "UBERON:0000006": {
     "model": "Adult_Human_PancreaticIslet.pkl",
-    "fallback_level": ["pancreas_L1","Islet_of_Langerhans"]
+    "fallback_level": ["Islet_of_Langerhans", "pancreas_L1"]
   },
   "UBERON:0000947": "UBERON:0000948",
   "UBERON:0000948": {
@@ -37,10 +37,10 @@
   },
   "UBERON:0002108": {
     "model": "Cells_Intestinal_Tract.pkl",
-    "fallback_level": ["Small_Intestine","intestine_L1"]
+    "fallback_level": ["Small_Intestine", "intestine_L1"]
   },
   "UBERON:0000059": {
     "model": "Cells_Intestinal_Tract.pkl",
-    "fallback_level": ["Large_Intestine","intestine_L1"]
+    "fallback_level": ["Large_Intestine", "intestine_L1"]
   }
 }
