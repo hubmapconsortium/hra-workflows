@@ -145,13 +145,15 @@ def prepare_filtered_matrix(
     return filtered_matrix
 
 
-def merge_markers_into_matrix(
+
+
+def create_gene_expr_json(
     matrix: anndata.AnnData,
     markers_df: pd.DataFrame,
     clid_column: str,
     gene_expr_column: str,
-) -> anndata.AnnData:
-    """Merge marker gene data into the matrix observations.
+) -> dict:
+    """Create a JSON mapping of cell IDs to gene expressions using marker data.
 
     Args:
         matrix (anndata.AnnData): Original matrix
@@ -160,59 +162,54 @@ def merge_markers_into_matrix(
         gene_expr_column (str): Column name for gene expression data
 
     Returns:
-        anndata.AnnData: Updated matrix with marker gene data
+        dict: Mapping of cell IDs to their gene expression data
     """
     
-    # Merge into obs - explicitly specify the merge column to avoid unhashable type errors
-    merged_obs = matrix.obs.merge(
+    # Merge to get the mapping - explicitly specify the merge column to avoid unhashable type errors
+    merged_df = matrix.obs.merge(
         markers_df[[clid_column, gene_expr_column]],
         how="left",
         left_on=clid_column,
         right_on=clid_column,
     )
 
-    
-    merged_obs.fillna({gene_expr_column: "[]"}, inplace=True)
+    # Fill NaN with empty lists
+    merged_df.fillna({gene_expr_column: "[]"}, inplace=True)
 
-    
     # Handle the case where pandas merge created suffixes
     actual_gene_expr_column = gene_expr_column
-    if gene_expr_column not in merged_obs.columns:
+    if gene_expr_column not in merged_df.columns:
         # Check for suffixed columns
-        if f"{gene_expr_column}_x" in merged_obs.columns and f"{gene_expr_column}_y" in merged_obs.columns:
-            # Use the _y column (from markers_df) and drop the _x column (from matrix.obs)
+        if f"{gene_expr_column}_x" in merged_df.columns and f"{gene_expr_column}_y" in merged_df.columns:
+            # Use the _y column (from markers_df) and drop the _x column
             actual_gene_expr_column = f"{gene_expr_column}_y"
-            merged_obs = merged_obs.drop(columns=[f"{gene_expr_column}_x"])
-        elif f"{gene_expr_column}_y" in merged_obs.columns:
+            merged_df = merged_df.drop(columns=[f"{gene_expr_column}_x"])
+        elif f"{gene_expr_column}_y" in merged_df.columns:
             actual_gene_expr_column = f"{gene_expr_column}_y"
         else:
-            raise KeyError(f"Column {gene_expr_column} not found in merged_obs")
-    
-    
-    if actual_gene_expr_column in merged_obs.columns:
+            raise KeyError(f"Column {gene_expr_column} not found in merged dataframe")
+
+    if actual_gene_expr_column not in merged_df.columns:
+        raise KeyError(f"Column {actual_gene_expr_column} not found in merged dataframe")
+
+    # Create the gene expression dictionary
+    gene_expr_dict = {}
+    for _, row in merged_df.iterrows():
+        clid = row[clid_column]
+        expr_data = row[actual_gene_expr_column]
         
+        # Handle the expression data - ensure it's a valid JSON list
         try:
-            merged_obs[actual_gene_expr_column] = merged_obs[actual_gene_expr_column].apply(json.dumps)
+            if isinstance(expr_data, str):
+                expr_list = json.loads(expr_data)
+            else:
+                expr_list = expr_data if expr_data is not None else []
+        except json.JSONDecodeError:
+            expr_list = []
+            
+        gene_expr_dict[clid] = expr_list
 
-        except Exception as e:
-            # Handle the case where json.dumps fails
-            merged_obs[actual_gene_expr_column] = merged_obs[actual_gene_expr_column].apply(lambda x: str(x) if x is not None else "[]")
-
-
-
-
-        # Rename back to original column name if needed
-        if actual_gene_expr_column != gene_expr_column:
-            merged_obs = merged_obs.rename(columns={actual_gene_expr_column: gene_expr_column})
-
-    else:
-        raise KeyError(f"Column {actual_gene_expr_column} not found in merged_obs")
-    
-    merged_obs.index = matrix.obs.index
-    
-    matrix.obs = merged_obs
-    
-    return matrix
+    return gene_expr_dict
 
 
 def get_gene_expr_with_marker_function(
@@ -222,19 +219,21 @@ def get_gene_expr_with_marker_function(
     gene_expr_column: str,
     n_genes: int,
     marker_function: t.Callable[[anndata.AnnData, str, int], pd.DataFrame],
+    gene_expr_json_path: Path,
 ) -> anndata.AnnData:
-    """Generic function to compute and add gene mean expressions for all cells.
+    """Generic function to compute and save gene mean expressions to JSON file.
 
     Args:
         matrix (anndata.AnnData): Data
         ensemble (Path): Ensemble lookup data path
         clid_column (str): Cell type id column
-        gene_expr_column (str): Column to store gene expression on
+        gene_expr_column (str): Column name for JSON key
         n_genes (int): Number of top genes per cell type to save
         marker_function (callable): Function that takes (filtered_matrix, clid_column, n_genes) and returns markers_df
+        gene_expr_json_path (Path): Path to save gene expression JSON
 
     Returns:
-        anndata.AnnData: Updated data with gene expressions
+        anndata.AnnData: Original matrix (unchanged)
     """
 
     filtered_matrix = prepare_filtered_matrix(matrix, clid_column, ensemble)
@@ -242,10 +241,8 @@ def get_gene_expr_with_marker_function(
     markers_df = marker_function(filtered_matrix, clid_column, n_genes)
 
     # Compute mean expression per marker gene
-    
-    # Handle empty DataFrame case
     if len(markers_df) == 0:
-        markers_df[gene_expr_column] = []
+        markers_df[gene_expr_column] = [] 
     else:
         markers_df[gene_expr_column] = markers_df.apply(
             lambda row: get_marker_genes_with_expr(
@@ -259,15 +256,15 @@ def get_gene_expr_with_marker_function(
         )
     print(f"Mean expressions computed successfully")
 
-    result = merge_markers_into_matrix(
-        matrix,
-        markers_df,
-        clid_column,
-        gene_expr_column,
-    )
-
+    # Create gene expression mapping and save to JSON
+    gene_expr_json_path.parent.mkdir(parents=True, exist_ok=True)
+    gene_expr_dict = create_gene_expr_json(matrix, markers_df, clid_column, gene_expr_column)
     
-    return result
+    with gene_expr_json_path.open("w") as fh:
+        json.dump(gene_expr_dict, fh, indent=2)
+    
+    print(f"Gene expressions saved to {gene_expr_json_path}")
+    return matrix  # Return original matrix unchanged
 
 
 def get_arg_parser(description: str, marker_function_name: str = None) -> argparse.ArgumentParser:
@@ -300,7 +297,13 @@ def get_arg_parser(description: str, marker_function_name: str = None) -> argpar
         "--output-matrix",
         type=Path,
         default=default_output,
-        help="matrix with gene expressions output path",
+        help="Output matrix path (will be unchanged from input)",
+    )
+    parser.add_argument(
+        "--output-gene-expr-json",
+        type=Path,
+        required=True,
+        help="Output path for gene expression data JSON file",
     )
     parser.add_argument(
         "--output-report",
@@ -323,7 +326,8 @@ def common_main(
             args.clid_column,
             args.gene_expr_column,
             args.gene_expr_count,
-            marker_function, 
+            marker_function,
+            gene_expr_json_path=args.output_gene_expr_json,
         )
 
         matrix.write_h5ad(args.output_matrix)

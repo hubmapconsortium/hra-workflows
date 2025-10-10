@@ -24,10 +24,15 @@ inputs:
   options: ./options.yml#options
 
 outputs:
-  matrix_with_nsforest:
-    type: File?
+  matrix:
+    type: File
     outputBinding:
       glob: matrix_with_nsforest.h5ad
+    doc: Original matrix passed through unchanged
+  nsforest_gene_expr_json:
+    type: File
+    outputBinding:
+      glob: nsforest_gene_expr.json
   report:
     type: File?
     outputBinding:
