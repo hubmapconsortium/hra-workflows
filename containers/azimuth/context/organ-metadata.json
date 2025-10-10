@@ -48,6 +48,7 @@
     "prediction_column": "celltype.l2",
     "fallback_level": ["Bone_marrow_L1", "Bone_marrow"]
   },
+  "UBERON:0002373": "UBERON:0001013",
   "UBERON:0001013": {
     "model": "adiposeref",
     "organ_level": "Adipose_L2",
