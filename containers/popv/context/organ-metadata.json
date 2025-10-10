@@ -17,6 +17,7 @@
     "model": "Eye",
     "organ_level": "eye"
   },
+  "UBERON:0002373": "UBERON:0001013",
   "UBERON:0001013": {
     "model": "Fat",
     "organ_level": "adipose tissue"
