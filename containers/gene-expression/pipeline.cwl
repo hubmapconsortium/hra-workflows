@@ -24,10 +24,15 @@ inputs:
   options: ./options.yml#options
 
 outputs:
-  matrix_with_gene_expr:
-    type: File?
+  matrix:
+    type: File
     outputBinding:
       glob: matrix_with_gene_expr.h5ad
+    doc: Original matrix passed through unchanged
+  gene_expr_json:
+    type: File
+    outputBinding:
+      glob: gene_expr.json
   report:
     type: File?
     outputBinding:
