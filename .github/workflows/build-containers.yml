@@ -21,11 +21,12 @@ jobs:
             celltypist,
             crosswalking,
             extract-summary,
+            frmatch,
             gene-expression,
             nsforest,
             pan-human-azimuth,
             popv,
-            frmatch,
+            qc,
           ]
 
     steps:
