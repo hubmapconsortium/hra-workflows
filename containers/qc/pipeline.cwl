@@ -12,40 +12,45 @@ requirements:
 baseCommand: python
 arguments:
   - /main.py
-  - --output
-  - "$(inputs.options.outputDir)"
   - "--log-level"
   - "40"
 
 inputs:
   matrix:
     type: File
-    label: Data to annotate in h5ad format
+    label: Data to run QC on in h5ad format
     inputBinding:
       position: 0
-  options: ./options.yml#options
+  options:
+    type: "./options.yml#options?"
 
 outputs:
+  outputDir:
+    type: Directory
+    outputBinding:
+      glob: 'qc_results'
+    doc: "QC results"
+
   qcPerCellCsv:
     type: File
     outputBinding:
-      glob: "$(inputs.outputDir)/qc_per_cell.csv"
+      glob: "qc_results/qc_per_cell.csv"
     doc: "Per-cell QC metrics table."
 
   qcSummaryCsv:
     type: File
     outputBinding:
-      glob: "$(inputs.outputDir)/qc_summary.csv"
+      glob: "qc_results/qc_summary.csv"
     doc: "Summary QC statistics across cells."
 
   qcSummaryJson:
     type: File
     outputBinding:
-      glob: "$(inputs.outputDir)/qc_summary.json"
+      glob: "qc_results/qc_summary.json"
     doc: "JSON summary of QC results and thresholds."
 
   filteredH5ad:
     type: File?
     outputBinding:
-      glob: "$(inputs.outputDir)/filtered_data.h5ad"
+      glob: "qc_results/filtered_data.h5ad"
     doc: "Filtered AnnData file containing only high-quality cells (if --filter)."

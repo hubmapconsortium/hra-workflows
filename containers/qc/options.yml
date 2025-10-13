@@ -2,55 +2,34 @@ type: record
 name: options
 label: qc specific options
 fields:
-  inputFile:
-    type: File
-    inputBinding:
-      position: 1
-    doc: 'Input AnnData .h5ad file containing cell x gene matrix.'
-
-  outputDir:
-    type: string
-    default: 'qc_results'
-    inputBinding:
-      position: 2
-      prefix: '-o'
-    doc: 'Output directory for QC results.'
-
   mtPrefix:
     type: string?
     inputBinding:
       prefix: '--mt-prefix'
-    default: 'MT-'
     doc: 'Prefix used to identify mitochondrial genes.'
 
   riboPrefix:
     type: string[]?
     inputBinding:
       prefix: '--ribo-prefix'
-    default:
-      - 'RPS'
-      - 'RPL'
     doc: 'Prefixes used to identify ribosomal genes.'
 
   minGenes:
     type: int?
     inputBinding:
       prefix: '--min-genes'
-    default: 200
     doc: 'Minimum number of genes per cell.'
 
   maxGenes:
     type: int?
     inputBinding:
       prefix: '--max-genes'
-    default: 7500
     doc: 'Maximum number of genes per cell.'
 
   maxMt:
     type: float?
     inputBinding:
       prefix: '--max-mt'
-    default: 5.0
     doc: 'Maximum percent of mitochondrial gene counts per cell.'
 
   minRibo:
@@ -60,7 +39,7 @@ fields:
     doc: 'Minimum percent of ribosomal gene counts per cell (optional).'
 
   filterCells:
-    type: boolean
+    type: boolean?
     inputBinding:
       prefix: '--filter'
     doc: 'If true, writes a filtered .h5ad file with only high-quality cells.'
@@ -69,5 +48,4 @@ fields:
     type: int?
     inputBinding:
       prefix: '--log-level'
-    default: 20
     doc: 'Numeric logging level (10=DEBUG, 20=INFO, 30=WARNING, etc.).'

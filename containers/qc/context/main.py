@@ -42,7 +42,7 @@ def _setup_logging(level: int = 20) -> None:
         Logging level (10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR, 50=CRITICAL).
     """
     logging.basicConfig(
-        format="[%(asctime)s] %(levelname)s: %(message)s",
+        format="%(levelname)s: %(message)s",
         level=level,
         datefmt="%Y-%m-%d %H:%M:%S",
     )
