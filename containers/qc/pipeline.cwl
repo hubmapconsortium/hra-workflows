@@ -21,8 +21,7 @@ inputs:
     label: Data to run QC on in h5ad format
     inputBinding:
       position: 0
-  options:
-    type: "./options.yml#options?"
+  options: "./options.yml#options?"
 
 outputs:
   outputDir:
