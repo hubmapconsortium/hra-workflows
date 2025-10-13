@@ -78,7 +78,7 @@ steps:
       options:
         source: algorithm
         valueFrom: $(self.geneExpression || {})
-    out: [matrix, gene_expr_json, report]
+    out: [gene_expr_json, report]
 
   nsforest:
     run: ../containers/nsforest/pipeline.cwl
@@ -88,15 +88,15 @@ steps:
       options:
         source: algorithm
         valueFrom: $(self.nsforest || {})
-    out: [matrix, nsforest_gene_expr_json, report]
+    out: [nsforest_gene_expr_json, report]
 
   summarize:
     run: ../containers/extract-summary/pipeline.cwl
     when: $(!!inputs.matrix)
     in:
-      matrix: crosswalk/matrix_with_crosswalking  # Same input matrix for cell labels
-      gene_expr_json: gene_expression/gene_expr_json  # Gene expression data from JSON
-      nsforest_gene_expr_json: nsforest/nsforest_gene_expr_json  # NSForest data from JSON
+      matrix: crosswalk/matrix_with_crosswalking  
+      gene_expr_json: gene_expression/gene_expr_json  
+      nsforest_gene_expr_json: nsforest/nsforest_gene_expr_json  
       options:
         source: algorithm
         valueFrom: $(self.summarize || {})
