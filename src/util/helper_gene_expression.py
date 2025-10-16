@@ -220,7 +220,7 @@ def get_gene_expr_with_marker_function(
     n_genes: int,
     marker_function: t.Callable[[anndata.AnnData, str, int], pd.DataFrame],
     gene_expr_json_path: Path,
-) -> anndata.AnnData:
+) -> dict:
     """Generic function to compute and save gene mean expressions to JSON file.
 
     Args:
@@ -256,15 +256,9 @@ def get_gene_expr_with_marker_function(
         )
     print(f"Mean expressions computed successfully")
 
-    # Create gene expression mapping and save to JSON
-    gene_expr_json_path.parent.mkdir(parents=True, exist_ok=True)
+    # Create gene expression mapping
     gene_expr_dict = create_gene_expr_json(matrix, markers_df, clid_column, gene_expr_column)
-    
-    with gene_expr_json_path.open("w") as fh:
-        json.dump(gene_expr_dict, fh, indent=2)
-    
-    print(f"Gene expressions saved to {gene_expr_json_path}")
-    return matrix  # Return original matrix unchanged
+    return gene_expr_dict
 
 
 def get_arg_parser(description: str, marker_function_name: str = None) -> argparse.ArgumentParser:
@@ -294,15 +288,9 @@ def get_arg_parser(description: str, marker_function_name: str = None) -> argpar
     )
     
     parser.add_argument(
-        "--output-matrix",
-        type=Path,
-        default=default_output,
-        help="Output matrix path (will be unchanged from input)",
-    )
-    parser.add_argument(
         "--output-gene-expr-json",
         type=Path,
-        required=True,
+        default="gene_expr.json" if not is_nsforest else "nsforest_gene_expr.json",
         help="Output path for gene expression data JSON file",
     )
     parser.add_argument(
@@ -320,7 +308,7 @@ def common_main(
 ) -> None:
     """Common main function for both implementations."""
     try:
-        matrix = get_gene_expr_with_marker_function(
+        gene_expr_dict = get_gene_expr_with_marker_function(
             args.matrix,
             args.ensemble_lookup,
             args.clid_column,
@@ -329,8 +317,11 @@ def common_main(
             marker_function,
             gene_expr_json_path=args.output_gene_expr_json,
         )
-
-        matrix.write_h5ad(args.output_matrix)
+        
+        # Save gene expressions to JSON
+        with args.output_gene_expr_json.open("w") as fh:
+            json.dump(gene_expr_dict, fh, indent=2)
+        print(f"Gene expressions saved to {args.output_gene_expr_json}")
         
         # Create success report
         args.output_report.parent.mkdir(parents=True, exist_ok=True)

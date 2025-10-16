@@ -14,6 +14,8 @@ arguments:
   - /main.py
   - --output-report
   - report_nsforest.json
+  - --output-gene-expr-json
+  - nsforest_gene_expr.json
 
 inputs:
   matrix:

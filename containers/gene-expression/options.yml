@@ -21,3 +21,8 @@ fields:
     type: File?
     inputBinding:
       prefix: --ensemble-lookup
+  outputGeneExprJson:
+    type: string?
+    label: Path to output gene expression JSON file
+    inputBinding:
+      prefix: --output-gene-expr-json

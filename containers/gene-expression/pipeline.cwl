@@ -14,6 +14,8 @@ arguments:
   - /main.py
   - --output-report
   - report_gene_expr.json
+  - --output-gene-expr-json
+  - gene_expr.json
 
 inputs:
   matrix:
@@ -21,15 +23,15 @@ inputs:
     label: Data to get gene expression for in h5ad format
     inputBinding:
       position: 0
-  options: ./options.yml#options
+  options: ./options.yml#options?
 
 outputs:
   gene_expr_json:
     type: File
     outputBinding:
-      glob: gene_expr.json
+      glob: "gene_expr.json"
   report:
     type: File?
     outputBinding:
-      glob: report_gene_expr.json
+      glob: "report_gene_expr.json"
   

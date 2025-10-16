@@ -64,11 +64,11 @@ def unique_rows_to_summary_rows(
 
     # Add gene expression data from JSON if provided
     if gene_expr_data is not None:
-        df["gene_expr"] = unique[clid_column].map(lambda x: gene_expr_data.get(x, []))
+        df["gene_expr"] = unique[clid_column].astype(object).apply(lambda x: gene_expr_data.get(x, []))
 
     # Add NSForest gene expression data from JSON if provided
     if nsforest_gene_expr_data is not None:
-        df["nsforest_gene_expr"] = unique[clid_column].map(lambda x: nsforest_gene_expr_data.get(x, []))
+        df["nsforest_gene_expr"] = unique[clid_column].astype(object).apply(lambda x: nsforest_gene_expr_data.get(x, []))
 
     return df.to_dict("records")
 
@@ -89,11 +89,10 @@ def main(args: argparse.Namespace):
     if args.gene_expr_json:
         with open(args.gene_expr_json) as f:
             gene_expr_data = json.load(f)
-    
     if args.nsforest_gene_expr_json:
         with open(args.nsforest_gene_expr_json) as f:
             nsforest_gene_expr_data = json.load(f)
-
+            
     # Get unique rows with counts from matrix
     unique_rows = get_unique_rows_with_counts(args.matrix, args.cell_id_column)
     
