@@ -12,10 +12,6 @@ requirements:
 baseCommand: python
 arguments:
   - /main.py
-  - --output-report
-  - report_gene_expr.json
-  - --output-gene-expr-json
-  - gene_expr.json
 
 inputs:
   matrix:
@@ -23,15 +19,14 @@ inputs:
     label: Data to get gene expression for in h5ad format
     inputBinding:
       position: 0
-  options: ./options.yml#options?
+  options: ./options.yml#options
 
 outputs:
-  gene_expr_json:
-    type: File
+  matrix_with_gene_expr:
+    type: File?
     outputBinding:
-      glob: "gene_expr.json"
+      glob: matrix_with_gene_expr.h5ad
   report:
     type: File?
     outputBinding:
-      glob: "report_gene_expr.json"
-  
+      glob: report.json

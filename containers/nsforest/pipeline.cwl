@@ -12,10 +12,6 @@ requirements:
 baseCommand: python
 arguments:
   - /main.py
-  - --output-report
-  - report_nsforest.json
-  - --output-gene-expr-json
-  - nsforest_gene_expr.json
 
 inputs:
   matrix:
@@ -26,11 +22,11 @@ inputs:
   options: ./options.yml#options
 
 outputs:
-  nsforest_gene_expr_json:
-    type: File
+  matrix_with_nsforest:
+    type: File?
     outputBinding:
-      glob: nsforest_gene_expr.json
+      glob: matrix_with_nsforest.h5ad
   report:
     type: File?
     outputBinding:
-      glob: report_nsforest.json
+      glob: report.json 
