@@ -74,7 +74,7 @@ steps:
     run: ../containers/gene-expression/pipeline.cwl
     when: $(!!inputs.matrix)
     in:
-      matrix: crosswalk/matrix_with_crosswalking  # Input matrix
+      matrix: crosswalk/matrix_with_crosswalking  
       options:
         source: algorithm
         valueFrom: $(self.geneExpression || {})
@@ -84,7 +84,7 @@ steps:
     run: ../containers/nsforest/pipeline.cwl
     when: $(!!inputs.matrix)
     in:
-      matrix: crosswalk/matrix_with_crosswalking  # Same input matrix
+      matrix: crosswalk/matrix_with_crosswalking  
       options:
         source: algorithm
         valueFrom: $(self.nsforest || {})
