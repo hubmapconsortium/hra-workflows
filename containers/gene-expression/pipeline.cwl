@@ -22,10 +22,10 @@ inputs:
   options: ./options.yml#options
 
 outputs:
-  matrix_with_gene_expr:
+  gene_expr_json:
     type: File?
     outputBinding:
-      glob: matrix_with_gene_expr.h5ad
+      glob: gene_expr.json
   report:
     type: File?
     outputBinding:
