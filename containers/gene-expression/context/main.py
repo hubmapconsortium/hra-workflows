@@ -37,7 +37,7 @@ def get_marker_gene_scanpy(
     Returns:
         pd.DataFrame: DataFrame with columns [cluster_header, marker_genes]
     """
-    adata = matrix.copy()
+    adata = matrix
 
     # Run scanpy rank genes groups
     sc.tl.rank_genes_groups(adata, groupby=cluster_header, n_genes=n_genes)
@@ -60,7 +60,7 @@ def get_marker_gene_scanpy(
 
 def main():
     """Main function for gene expression marker gene analysis."""
-    parser = get_arg_parser("Add gene expressions to h5ad data")
+    parser = get_arg_parser("Generate gene expression JSON from marker genes")
     args = parser.parse_args()
 
     # Use the common main function with gene expression-specific marker function

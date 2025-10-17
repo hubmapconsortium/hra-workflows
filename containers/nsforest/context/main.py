@@ -82,7 +82,7 @@ def get_marker_nsforest(
 
 def main():
     """Main function for NSForest marker gene analysis."""
-    parser = get_arg_parser("Add NSForest markers to h5ad data", "get_marker_nsforest")
+    parser = get_arg_parser("Generate NSForest gene expression JSON", "get_marker_nsforest")
     args = parser.parse_args()
 
     # Use the common main function with NSForest-specific marker function

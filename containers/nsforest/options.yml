@@ -20,4 +20,9 @@ fields:
   ensembleLookup:
     type: File?
     inputBinding:
-      prefix: --ensemble-lookup 
+      prefix: --ensemble-lookup
+  outputGeneExprJson:
+    type: string?
+    label: Path to output NSForest gene expression JSON file
+    inputBinding:
+      prefix: --output-gene-expr-json

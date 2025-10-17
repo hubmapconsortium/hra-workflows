@@ -12,8 +12,6 @@ requirements:
 baseCommand: python
 arguments:
   - /main.py
-  - --output-report
-  - report_gene_expr.json
 
 inputs:
   matrix:
@@ -24,12 +22,11 @@ inputs:
   options: ./options.yml#options
 
 outputs:
-  matrix_with_gene_expr:
+  gene_expr_json:
     type: File?
     outputBinding:
-      glob: matrix_with_gene_expr.h5ad
+      glob: gene_expr.json
   report:
     type: File?
     outputBinding:
-      glob: report_gene_expr.json
-  
+      glob: report.json
