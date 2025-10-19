@@ -16,9 +16,19 @@ arguments:
 inputs:
   matrix:
     type: File
-    doc: Annotated matrix h5ad
+    doc: Matrix h5ad for cell labels and counts
     inputBinding:
       position: 0
+  gene_expr_json:
+    type: File
+    doc: Gene expression data from JSON file
+    inputBinding:
+      prefix: --gene-expr-json
+  nsforest_gene_expr_json:
+    type: File
+    doc: NSForest gene expression data from JSON file
+    inputBinding:
+      prefix: --nsforest-gene-expr-json
   options: ./options.yml#options
 
 outputs:
