@@ -1,0 +1,51 @@
+type: record
+name: options
+label: qc specific options
+fields:
+  mtPrefix:
+    type: string?
+    inputBinding:
+      prefix: '--mt-prefix'
+    doc: 'Prefix used to identify mitochondrial genes.'
+
+  riboPrefix:
+    type: string[]?
+    inputBinding:
+      prefix: '--ribo-prefix'
+    doc: 'Prefixes used to identify ribosomal genes.'
+
+  minGenes:
+    type: int?
+    inputBinding:
+      prefix: '--min-genes'
+    doc: 'Minimum number of genes per cell.'
+
+  maxGenes:
+    type: int?
+    inputBinding:
+      prefix: '--max-genes'
+    doc: 'Maximum number of genes per cell.'
+
+  maxMt:
+    type: float?
+    inputBinding:
+      prefix: '--max-mt'
+    doc: 'Maximum percent of mitochondrial gene counts per cell.'
+
+  minRibo:
+    type: float?
+    inputBinding:
+      prefix: '--min-ribo'
+    doc: 'Minimum percent of ribosomal gene counts per cell (optional).'
+
+  filterCells:
+    type: boolean?
+    inputBinding:
+      prefix: '--filter'
+    doc: 'If true, writes a filtered .h5ad file with only high-quality cells.'
+
+  logLevel:
+    type: int?
+    inputBinding:
+      prefix: '--log-level'
+    doc: 'Numeric logging level (10=DEBUG, 20=INFO, 30=WARNING, etc.).'
