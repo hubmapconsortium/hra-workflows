@@ -79,6 +79,7 @@ class FRmatchAlgorithm(Algorithm[FRmatchOrganMetadata, FRmatchOptions]):
         adata_query = self.copy_annotations(adata_query, annotation)
 
         # Remove unlabeled cells
+        adata_query.obs.index = adata_query.obs.index.astype(str)
         adata_query = adata_query[~adata_query.obs[self.prediction_column].astype(str).isin([False, "False", "unassigned"])]
 
         return {
@@ -120,7 +121,7 @@ class FRmatchAlgorithm(Algorithm[FRmatchOrganMetadata, FRmatchOptions]):
         if ensembl_id:
             adata.var = adata.var.rename(columns={col: "ensembl_id"})
         else:  # if 'ensembl_id' not in adata.var, must be unlabeled in index
-            adata.var["ensembl_id"] = adata.var.index
+            adata.var["ensembl_id"] = adata.var.index.astype(str)
         print("Before renaming")
         print(adata.var.columns)
         if not feature_name:
