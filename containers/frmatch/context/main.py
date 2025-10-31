@@ -14,6 +14,7 @@ from pathlib import Path
 
 from src.algorithm import Algorithm, RunResult, add_common_arguments
 from src.util.layers import set_data_layer
+from src.util.ensemble import add_ensemble_data
 
 
 class FRmatchOrganMetadata(t.TypedDict):
@@ -25,6 +26,7 @@ class FRmatchOrganMetadata(t.TypedDict):
 class FRmatchOptions(t.TypedDict):
     reference_data_dir: Path
     query_layers_key: t.Optional[str]
+    ensemble_lookup: Path
 
 
 class FRmatchAlgorithm(Algorithm[FRmatchOrganMetadata, FRmatchOptions]):
@@ -43,14 +45,14 @@ class FRmatchAlgorithm(Algorithm[FRmatchOrganMetadata, FRmatchOptions]):
         adata_query = set_data_layer(adata_query, options["query_layers_key"])
 
         # Getting .var columns
-        adata_query = self.get_var_cols(adata_query)
+        adata_query = self.get_var_cols(adata_query, options["ensemble_lookup"])
         cluster_header = metadata["cluster_header"]
 
         # Loading organ reference
         adata_organ = self.get_reference(options, metadata)
 
-        # Run leiden clustering
-        sc.pp.neighbors(adata_query)
+        # Run leiden clustering using count matrix (X) instead of PCA embedding
+        sc.pp.neighbors(adata_query, use_rep="X")
         sc.tl.leiden(adata_query, resolution=0.1, key_added=cluster_header)
 
         # Subsetting adata_query to adata_organ feature space
@@ -77,7 +79,8 @@ class FRmatchAlgorithm(Algorithm[FRmatchOrganMetadata, FRmatchOptions]):
         adata_query = self.copy_annotations(adata_query, annotation)
 
         # Remove unlabeled cells
-        adata_query = adata_query[~adata_query.obs[self.prediction_column].isin([False, "False", "unassigned"])]
+        adata_query.obs.index = adata_query.obs.index.astype(str)
+        adata_query = adata_query[~adata_query.obs[self.prediction_column].astype(str).isin([False, "False", "unassigned"])]
 
         return {
             "data": adata_query,
@@ -88,11 +91,12 @@ class FRmatchAlgorithm(Algorithm[FRmatchOrganMetadata, FRmatchOptions]):
             "prediction_confidence": "frmatch_confidence",
         }
 
-    def get_var_cols(self, adata: ad.AnnData) -> ad.AnnData:
+    def get_var_cols(self, adata: ad.AnnData, ensemble_lookup: Path) -> ad.AnnData:
         """Finding feature_name and ensembl_id columns in adata.var.
 
         Args:
             query (ad.AnnData): AnnData to rename .var columns.
+            ensemble_lookup (Path): Path to ensemble lookup CSV file.
 
         Returns:
             ad.AnnData: AnnData with "feature_name" and "ensembl_id" in .var.
@@ -117,8 +121,10 @@ class FRmatchAlgorithm(Algorithm[FRmatchOrganMetadata, FRmatchOptions]):
         if ensembl_id:
             adata.var = adata.var.rename(columns={col: "ensembl_id"})
         else:  # if 'ensembl_id' not in adata.var, must be unlabeled in index
-            adata.var["ensembl_id"] = adata.var.index
-
+            adata.var["ensembl_id"] = adata.var.index.astype(str)
+        if not feature_name:
+            adata = add_ensemble_data(adata, ensemble_lookup)
+            adata.var = adata.var.rename(columns={"gene_name": "feature_name"})
         return adata
 
     def get_reference(
@@ -303,6 +309,12 @@ def _get_arg_parser():
         type=Path,
         required=True,
         help="Path to directory with reference data",
+    )
+    parser.add_argument(
+        "--ensemble-lookup",
+        type=Path,
+        default="/src/assets/ensemble-lookup.csv",
+        help="Ensemble id to gene name csv",
     )
     parser.add_argument("--query-layers-key", help="Data layer to use")
     return parser

@@ -7,6 +7,10 @@ fields:
     label: Directory with reference data files in the h5ad format
     inputBinding:
       prefix: --reference-data-dir
+  ensembleLookup:
+    type: File?
+    inputBinding:
+      prefix: --ensemble-lookup
   queryLayersKey:
     type: string?
     label: Data layer to use
