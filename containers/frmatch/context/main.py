@@ -51,8 +51,8 @@ class FRmatchAlgorithm(Algorithm[FRmatchOrganMetadata, FRmatchOptions]):
         # Loading organ reference
         adata_organ = self.get_reference(options, metadata)
 
-        # Run leiden clustering
-        sc.pp.neighbors(adata_query)
+        # Run leiden clustering using count matrix (X) instead of PCA embedding
+        sc.pp.neighbors(adata_query, use_rep="X")
         sc.tl.leiden(adata_query, resolution=0.1, key_added=cluster_header)
 
         # Subsetting adata_query to adata_organ feature space
@@ -122,13 +122,9 @@ class FRmatchAlgorithm(Algorithm[FRmatchOrganMetadata, FRmatchOptions]):
             adata.var = adata.var.rename(columns={col: "ensembl_id"})
         else:  # if 'ensembl_id' not in adata.var, must be unlabeled in index
             adata.var["ensembl_id"] = adata.var.index.astype(str)
-        print("Before renaming")
-        print(adata.var.columns)
         if not feature_name:
             adata = add_ensemble_data(adata, ensemble_lookup)
             adata.var = adata.var.rename(columns={"gene_name": "feature_name"})
-        print("After renaming")
-        print(adata.var.columns)
         return adata
 
     def get_reference(
