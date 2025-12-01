@@ -120,7 +120,7 @@ def compute_qc_metrics(
     adata.var["ribo"] = adata.var_names.str.upper().str.startswith(tuple(ribo_prefixes))
 
     sc.pp.calculate_qc_metrics(
-        adata, qc_vars=["mt", "ribo"], percent_top=None, log1p=False, inplace=True
+        adata, qc_vars=["mt", "ribo"], percent_top=(20, 50), log1p=False, inplace=True
     )
     return adata
 
@@ -148,6 +148,8 @@ def flag_low_quality_cells(
         [
             "n_genes_by_counts",
             "total_counts",
+            "pct_counts_in_top_20_genes",
+            "pct_counts_in_top_50_genes",
             "pct_counts_mt",
             "pct_counts_ribo",
             "low_quality",
@@ -163,6 +165,10 @@ def flag_low_quality_cells(
 def summarize_qc(qc_df: pd.DataFrame) -> pd.DataFrame:
     """Generate summary statistics for QC metrics."""
     summary = qc_df.describe(percentiles=[0.05, 0.25, 0.5, 0.75, 0.95]).T
+    summary.loc["mean_n_genes_by_counts", "mean"] = qc_df["n_genes_by_counts"].mean()
+    summary.loc["mean_total_counts", "mean"] = qc_df["total_counts"].mean()
+    summary.loc["mean_pct_counts_in_top_20_genes", "mean"] = qc_df["pct_counts_in_top_20_genes"].mean()
+    summary.loc["mean_pct_counts_in_top_50_genes", "mean"] = qc_df["pct_counts_in_top_50_genes"].mean()
     summary.loc["mean_pct_counts_mt", "mean"] = qc_df["pct_counts_mt"].mean()
     summary.loc["mean_pct_counts_ribo", "mean"] = qc_df["pct_counts_ribo"].mean()
     return summary
@@ -247,8 +253,8 @@ def run_qc(
     total_cells = adata.n_obs
     low_quality_cells = int(adata.obs["low_quality"].sum())
     pct_removed = (low_quality_cells / total_cells) * 100
-    mean_mt = float(qc_df["pct_counts_mt"].mean())
-    mean_ribo = float(qc_df["pct_counts_ribo"].mean())
+    mean_mt = float(summary.loc['pct_counts_mt', 'mean'])
+    mean_ribo = float(summary.loc['pct_counts_ribo', 'mean'])
 
     logging.info(f"Total cells: {total_cells}")
     logging.info(f"Flagged low-quality cells: {low_quality_cells} ({pct_removed:.2f}%)")
@@ -272,6 +278,10 @@ def run_qc(
         "total_cells": int(total_cells),
         "low_quality_cells": int(low_quality_cells),
         "percent_low_quality": round(pct_removed, 2),
+        "mean_n_genes_by_counts": round(summary.loc['n_genes_by_counts', 'mean'], 3),
+        "mean_total_counts": round(summary.loc['total_counts', 'mean'], 3),
+        "mean_pct_counts_in_top_20_genes": round(summary.loc['pct_counts_in_top_20_genes', 'mean'], 3),
+        "mean_pct_counts_in_top_50_genes": round(summary.loc['pct_counts_in_top_50_genes', 'mean'], 3),
         "mean_pct_counts_mt": round(mean_mt, 3),
         "mean_pct_counts_ribo": round(mean_ribo, 3),
         "thresholds": {
