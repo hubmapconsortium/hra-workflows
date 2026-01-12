@@ -21,12 +21,49 @@ import argparse
 import json
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import anndata as ad
 import numpy as np
 import pandas as pd
 import scanpy as sc
+from src.util.ensemble import add_ensemble_data
+
+
+# -----------------------------------------------------------------------------
+# Gene list loading
+# -----------------------------------------------------------------------------
+def _load_gene_list_from_csv(csv_path: str) -> Tuple[Set[str], Set[str]]:
+    """
+    Load gene names and Ensembl IDs from a CSV file.
+    
+    Parameters
+    ----------
+    csv_path : str
+        Path to the CSV file containing gene information.
+    
+    Returns
+    -------
+    Tuple[Set[str], Set[str]]
+        A tuple of (gene_names, ensembl_ids_stripped) where ensembl_ids_stripped
+        has the version removed (everything after the dot).
+    """
+    try:
+        df = pd.read_csv(csv_path)
+        gene_names = set(df["gene_name"].dropna().unique())
+        # Strip version from Ensembl IDs (remove everything after the dot)
+        ensembl_ids = set(
+            eid.split(".")[0] for eid in df["ensembl_gene_id"].dropna().unique()
+        )
+        logging.info(f"Loaded {len(gene_names)} genes and {len(ensembl_ids)} Ensembl IDs from {csv_path}")
+        return gene_names, ensembl_ids
+    except FileNotFoundError:
+        logging.error(f"Gene list file not found: {csv_path}")
+        raise
+    except Exception as e:
+        logging.error(f"Error loading gene list from {csv_path}: {e}")
+        raise
 
 
 # -----------------------------------------------------------------------------
@@ -53,6 +90,11 @@ def _setup_logging(level: int = 20) -> None:
 # -----------------------------------------------------------------------------
 def _get_arg_parser() -> argparse.ArgumentParser:
     """Return a configured argument parser for QC metrics script."""
+    # Get default CSV paths from the same directory as this script
+    script_dir = Path(__file__).parent
+    default_mt_csv = script_dir / "human_mitochondrial_genes.csv"
+    default_ribo_csv = script_dir / "human_ribosomal_genes_structural.csv"
+    
     parser = argparse.ArgumentParser(
         description="Compute QC metrics from an h5ad file and optionally filter low-quality cells."
     )
@@ -61,33 +103,14 @@ def _get_arg_parser() -> argparse.ArgumentParser:
         "-o", "--output", help="Output directory for QC results.", default="qc_results"
     )
     parser.add_argument(
-        "--mt-prefix",
-        help="Prefix for mitochondrial genes (default: 'MT-')",
-        default="MT-",
+        "--mt-csv",
+        help="Path to CSV file with mitochondrial gene information (gene_name and ensembl_gene_id columns required).",
+        default=str(default_mt_csv),
     )
     parser.add_argument(
-        "--ribo-prefix",
-        nargs="*",
-        default=["RPS", "RPL"],
-        help="Prefixes for ribosomal genes (default: RPS and RPL).",
-    )
-    parser.add_argument(
-        "--min-genes", type=int, default=200, help="Minimum number of genes per cell."
-    )
-    parser.add_argument(
-        "--max-genes", type=int, default=7500, help="Maximum number of genes per cell."
-    )
-    parser.add_argument(
-        "--max-mt",
-        type=float,
-        default=5.0,
-        help="Maximum percent mitochondrial gene counts per cell.",
-    )
-    parser.add_argument(
-        "--min-ribo",
-        type=float,
-        default=None,
-        help="Minimum percent ribosomal gene counts per cell (optional).",
+        "--ribo-csv",
+        help="Path to CSV file with ribosomal gene information (gene_name and ensembl_gene_id columns required).",
+        default=str(default_ribo_csv),
     )
     parser.add_argument(
         "--filter",
@@ -107,17 +130,46 @@ def _get_arg_parser() -> argparse.ArgumentParser:
 # QC metric computation
 # -----------------------------------------------------------------------------
 def compute_qc_metrics(
-    adata: ad.AnnData, mt_prefix: str = "MT-", ribo_prefixes: Optional[List[str]] = None
+    adata: ad.AnnData, 
+    mt_genes: Optional[Tuple[Set[str], Set[str]]] = None,
+    ribo_genes: Optional[Tuple[Set[str], Set[str]]] = None,
 ) -> ad.AnnData:
-    """Compute per-cell QC metrics for mitochondrial and ribosomal genes."""
-    if ribo_prefixes is None:
-        ribo_prefixes = ["RPS", "RPL"]
+    """
+    Compute per-cell QC metrics for mitochondrial and ribosomal genes.
+    
+    Parameters
+    ----------
+    adata : ad.AnnData
+        Annotated data matrix.
+    mt_genes : Optional[Tuple[Set[str], Set[str]]]
+        Tuple of (gene_names, ensembl_ids_stripped) for mitochondrial genes.
+        If None, no mitochondrial genes will be marked.
+    ribo_genes : Optional[Tuple[Set[str], Set[str]]]
+        Tuple of (gene_names, ensembl_ids_stripped) for ribosomal genes.
+        If None, no ribosomal genes will be marked.
+    
+    Returns
+    -------
+    ad.AnnData
+        Updated AnnData object with QC metrics.
+    """
+    def _is_in_gene_set(var_name: str, gene_set: Optional[Tuple[Set[str], Set[str]]]) -> bool:
+        """Check if a variable name matches a gene name or Ensembl ID (version-stripped)."""
+        if gene_set is None:
+            return False
+        gene_names, ensembl_ids = gene_set
+        # Check exact match on gene name (case-sensitive)
+        if var_name in gene_names:
+            return True
+        # Check if it's an Ensembl ID (strip version for comparison)
+        var_name_stripped = var_name.split(".")[0]
+        if var_name_stripped in ensembl_ids:
+            return True
+        return False
 
-    mt_prefix = mt_prefix.upper()
-    ribo_prefixes = [p.upper() for p in ribo_prefixes]
-
-    adata.var["mt"] = adata.var_names.str.upper().str.startswith(mt_prefix)
-    adata.var["ribo"] = adata.var_names.str.upper().str.startswith(tuple(ribo_prefixes))
+    # Mark genes based on gene lists
+    adata.var["mt"] = adata.var_names.map(lambda x: _is_in_gene_set(x, mt_genes))
+    adata.var["ribo"] = adata.var_names.map(lambda x: _is_in_gene_set(x, ribo_genes))
 
     sc.pp.calculate_qc_metrics(
         adata, qc_vars=["mt", "ribo"], percent_top=(20, 50), log1p=False, inplace=True
@@ -229,23 +281,37 @@ def write_json_summary(
 def run_qc(
     input_path: str,
     output_dir: str = "qc_results",
-    mt_prefix: str = "MT-",
-    ribo_prefixes: Optional[List[str]] = None,
-    min_genes: int = 200,
-    max_genes: int = 7500,
-    max_mt: float = 5.0,
-    min_ribo: Optional[float] = None,
+    mt_csv: Optional[str] = None,
+    ribo_csv: Optional[str] = None,
     filter_cells: bool = False,
 ) -> Dict[str, str]:
     """Run the QC pipeline programmatically."""
     logging.info(f"Loading data from {input_path}")
     adata = sc.read_h5ad(input_path)
 
+    # Load gene lists from CSV files if provided
+    mt_genes = None
+    ribo_genes = None
+    
+    if mt_csv:
+        logging.info(f"Loading mitochondrial genes from {mt_csv}")
+        mt_genes = _load_gene_list_from_csv(mt_csv)
+    
+    if ribo_csv:
+        logging.info(f"Loading ribosomal genes from {ribo_csv}")
+        ribo_genes = _load_gene_list_from_csv(ribo_csv)
+
     logging.info("Computing QC metrics ...")
-    adata = compute_qc_metrics(adata, mt_prefix, ribo_prefixes)
+    adata = compute_qc_metrics(adata, mt_genes=mt_genes, ribo_genes=ribo_genes)
 
     logging.info("Flagging low-quality cells ...")
-    qc_df = flag_low_quality_cells(adata, min_genes, max_genes, max_mt, min_ribo)
+    qc_df = flag_low_quality_cells(
+        adata, 
+        min_genes=200,
+        max_genes=7500,
+        max_mt=5.0,
+        min_ribo=None,
+    )
     summary = summarize_qc(qc_df)
 
     per_cell_path, summary_path = write_qc_outputs(qc_df, summary, output_dir)
@@ -285,12 +351,12 @@ def run_qc(
         "mean_pct_counts_mt": round(mean_mt, 3),
         "mean_pct_counts_ribo": round(mean_ribo, 3),
         "thresholds": {
-            "min_genes": min_genes,
-            "max_genes": max_genes,
-            "max_mt": max_mt,
-            "min_ribo": min_ribo,
-            "mt_prefix": mt_prefix,
-            "ribo_prefixes": ribo_prefixes or ["RPS", "RPL"],
+            "min_genes": 200,
+            "max_genes": 7500,
+            "max_mt": 5.0,
+            "min_ribo": None,
+            "mt_csv": mt_csv,
+            "ribo_csv": ribo_csv,
         },
     }
 
@@ -313,12 +379,8 @@ def main() -> None:
     run_qc(
         input_path=args.input,
         output_dir=args.output,
-        mt_prefix=args.mt_prefix,
-        ribo_prefixes=args.ribo_prefix,
-        min_genes=args.min_genes,
-        max_genes=args.max_genes,
-        max_mt=args.max_mt,
-        min_ribo=args.min_ribo,
+        mt_csv=args.mt_csv,
+        ribo_csv=args.ribo_csv,
         filter_cells=args.filter,
     )
 
