@@ -1,48 +1,60 @@
 #!/usr/bin/env python3
-"""
-qc_metrics.py
-
-Compute standard single-cell RNA-seq quality control (QC) metrics from an .h5ad file
-using AnnData and Scanpy.
-
-Features:
-- Computes mitochondrial and ribosomal gene percentages
-- Flags low-quality cells based on user-defined thresholds
-- Exports per-cell and summary QC tables
-- Optionally filters out low-quality cells and writes a filtered .h5ad
-- Writes a machine-readable JSON summary for pipelines
-- Usable both as a CLI and an importable Python module
-- Uses Python logging (numeric levels, default INFO=20)
-"""
 
 from __future__ import annotations
 
-import argparse
 import json
 import logging
 import os
+import typing as t
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
 
 import anndata as ad
 import numpy as np
 import pandas as pd
 import scanpy as sc
+
+from src.algorithm import Algorithm, RunResult, add_common_arguments
 from src.util.ensemble import add_ensemble_data
+
+QC_OUTPUT_DIR = Path("qc_results")
+QC_PREDICTION_COLUMN = "qc_label"
+DEFAULT_MIN_GENES = 200
+DEFAULT_MAX_GENES = 7500
+DEFAULT_MIN_CELLS = 1000
+DEFAULT_MAX_MT = 10.0
+DEFAULT_MAX_RIBO = 10.0
+
+
+class QcOrganMetadata(t.TypedDict, total=False):
+    organ_name: str
+    max_mt: float
+    max_ribo: float
+
+
+class QcOptions(t.TypedDict):
+    mt_csv: Path
+    ribo_csv: Path
+    min_genes: int
+    max_genes: int
+    min_cells: int
+    max_mt: t.Optional[float]
+    max_ribo: t.Optional[float]
+    filter_cells: bool
+    ensemble_lookup: t.Optional[Path]
 
 
 # -----------------------------------------------------------------------------
 # Gene list loading
 # -----------------------------------------------------------------------------
-def _load_gene_list_from_csv(csv_path: str) -> Tuple[Set[str], Set[str]]:
+def _load_gene_list_from_csv(csv_path: Path) -> t.Tuple[t.Set[str], t.Set[str]]:
     """
     Load gene names and Ensembl IDs from a CSV file.
-    
+
     Parameters
     ----------
     csv_path : str
         Path to the CSV file containing gene information.
-    
+
     Returns
     -------
     Tuple[Set[str], Set[str]]
@@ -56,13 +68,18 @@ def _load_gene_list_from_csv(csv_path: str) -> Tuple[Set[str], Set[str]]:
         ensembl_ids = set(
             eid.split(".")[0] for eid in df["ensembl_gene_id"].dropna().unique()
         )
-        logging.info(f"Loaded {len(gene_names)} genes and {len(ensembl_ids)} Ensembl IDs from {csv_path}")
+        logging.info(
+            "Loaded %s genes and %s Ensembl IDs from %s",
+            len(gene_names),
+            len(ensembl_ids),
+            csv_path,
+        )
         return gene_names, ensembl_ids
     except FileNotFoundError:
-        logging.error(f"Gene list file not found: {csv_path}")
+        logging.error("Gene list file not found: %s", csv_path)
         raise
-    except Exception as e:
-        logging.error(f"Error loading gene list from {csv_path}: {e}")
+    except Exception as error:
+        logging.error("Error loading gene list from %s: %s", csv_path, error)
         raise
 
 
@@ -88,39 +105,68 @@ def _setup_logging(level: int = 20) -> None:
 # -----------------------------------------------------------------------------
 # Argument parsing
 # -----------------------------------------------------------------------------
-def _get_arg_parser() -> argparse.ArgumentParser:
+def _get_arg_parser():
     """Return a configured argument parser for QC metrics script."""
-    # Get default CSV paths from the same directory as this script
     script_dir = Path(__file__).parent
     default_mt_csv = script_dir / "human_mitochondrial_genes.csv"
     default_ribo_csv = script_dir / "human_ribosomal_genes_structural.csv"
-    
-    parser = argparse.ArgumentParser(
-        description="Compute QC metrics from an h5ad file and optionally filter low-quality cells."
-    )
-    parser.add_argument("input", help="Path to the input .h5ad file.")
-    parser.add_argument(
-        "-o", "--output", help="Output directory for QC results.", default="qc_results"
-    )
+
+    parser = add_common_arguments()
     parser.add_argument(
         "--mt-csv",
+        type=Path,
         help="Path to CSV file with mitochondrial gene information (gene_name and ensembl_gene_id columns required).",
-        default=str(default_mt_csv),
+        default=default_mt_csv,
     )
     parser.add_argument(
         "--ribo-csv",
+        type=Path,
         help="Path to CSV file with ribosomal gene information (gene_name and ensembl_gene_id columns required).",
-        default=str(default_ribo_csv),
+        default=default_ribo_csv,
+    )
+    parser.add_argument(
+        "--ensemble-lookup",
+        type=Path,
+        help="Optional ensemble id lookup csv used to enrich var metadata before QC.",
+    )
+    parser.add_argument(
+        "--min-genes",
+        type=int,
+        default=DEFAULT_MIN_GENES,
+        help="Minimum number of genes per cell.",
+    )
+    parser.add_argument(
+        "--max-genes",
+        type=int,
+        default=DEFAULT_MAX_GENES,
+        help="Maximum number of genes per cell.",
+    )
+    parser.add_argument(
+        "--min-cells",
+        type=int,
+        default=DEFAULT_MIN_CELLS,
+        help="Minimum number of cells that must remain after QC filtering.",
+    )
+    parser.add_argument(
+        "--max-mt",
+        type=float,
+        help="Maximum percent mitochondrial counts per cell. If omitted, uses organ metadata when available.",
+    )
+    parser.add_argument(
+        "--max-ribo",
+        type=float,
+        help="Maximum percent ribosomal counts per cell. If omitted, uses organ metadata when available.",
     )
     parser.add_argument(
         "--filter",
+        dest="filter_cells",
         action="store_true",
         help="Filter low-quality cells and save a filtered .h5ad file.",
     )
     parser.add_argument(
         "--log-level",
         type=int,
-        default=20,
+        default=40,
         help="Set the logging level numerically (10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR, 50=CRITICAL). Default: 20 (INFO).",
     )
     return parser
@@ -130,13 +176,13 @@ def _get_arg_parser() -> argparse.ArgumentParser:
 # QC metric computation
 # -----------------------------------------------------------------------------
 def compute_qc_metrics(
-    adata: ad.AnnData, 
-    mt_genes: Optional[Tuple[Set[str], Set[str]]] = None,
-    ribo_genes: Optional[Tuple[Set[str], Set[str]]] = None,
+    adata: ad.AnnData,
+    mt_genes: t.Optional[t.Tuple[t.Set[str], t.Set[str]]] = None,
+    ribo_genes: t.Optional[t.Tuple[t.Set[str], t.Set[str]]] = None,
 ) -> ad.AnnData:
     """
     Compute per-cell QC metrics for mitochondrial and ribosomal genes.
-    
+
     Parameters
     ----------
     adata : ad.AnnData
@@ -147,13 +193,16 @@ def compute_qc_metrics(
     ribo_genes : Optional[Tuple[Set[str], Set[str]]]
         Tuple of (gene_names, ensembl_ids_stripped) for ribosomal genes.
         If None, no ribosomal genes will be marked.
-    
+
     Returns
     -------
     ad.AnnData
         Updated AnnData object with QC metrics.
     """
-    def _is_in_gene_set(var_name: str, gene_set: Optional[Tuple[Set[str], Set[str]]]) -> bool:
+
+    def _is_in_gene_set(
+        var_name: str, gene_set: t.Optional[t.Tuple[t.Set[str], t.Set[str]]]
+    ) -> bool:
         """Check if a variable name matches a gene name or Ensembl ID (version-stripped)."""
         if gene_set is None:
             return False
@@ -182,7 +231,7 @@ def flag_low_quality_cells(
     min_genes: int,
     max_genes: int,
     max_mt: float,
-    min_ribo: Optional[float] = None,
+    max_ribo: t.Optional[float] = None,
 ) -> pd.DataFrame:
     """Flag low-quality cells based on QC thresholds."""
     low_quality = (
@@ -191,8 +240,8 @@ def flag_low_quality_cells(
         | (adata.obs["pct_counts_mt"] > max_mt)
     )
 
-    if min_ribo is not None:
-        low_quality |= adata.obs["pct_counts_ribo"] < min_ribo
+    if max_ribo is not None:
+        low_quality |= adata.obs["pct_counts_ribo"] > max_ribo
 
     adata.obs["low_quality"] = low_quality
 
@@ -219,16 +268,20 @@ def summarize_qc(qc_df: pd.DataFrame) -> pd.DataFrame:
     summary = qc_df.describe(percentiles=[0.05, 0.25, 0.5, 0.75, 0.95]).T
     summary.loc["mean_n_genes_by_counts", "mean"] = qc_df["n_genes_by_counts"].mean()
     summary.loc["mean_total_counts", "mean"] = qc_df["total_counts"].mean()
-    summary.loc["mean_pct_counts_in_top_20_genes", "mean"] = qc_df["pct_counts_in_top_20_genes"].mean()
-    summary.loc["mean_pct_counts_in_top_50_genes", "mean"] = qc_df["pct_counts_in_top_50_genes"].mean()
+    summary.loc["mean_pct_counts_in_top_20_genes", "mean"] = qc_df[
+        "pct_counts_in_top_20_genes"
+    ].mean()
+    summary.loc["mean_pct_counts_in_top_50_genes", "mean"] = qc_df[
+        "pct_counts_in_top_50_genes"
+    ].mean()
     summary.loc["mean_pct_counts_mt", "mean"] = qc_df["pct_counts_mt"].mean()
     summary.loc["mean_pct_counts_ribo", "mean"] = qc_df["pct_counts_ribo"].mean()
     return summary
 
 
 def write_qc_outputs(
-    qc_df: pd.DataFrame, summary: pd.DataFrame, output_dir: str
-) -> Tuple[str, str]:
+    qc_df: pd.DataFrame, summary: pd.DataFrame, output_dir: Path
+) -> t.Tuple[str, str]:
     """Write per-cell and summary QC results to CSV files."""
     os.makedirs(output_dir, exist_ok=True)
     per_cell_path = os.path.join(output_dir, "qc_per_cell.csv")
@@ -243,7 +296,7 @@ def write_qc_outputs(
     return per_cell_path, summary_path
 
 
-def filter_and_save(adata: ad.AnnData, output_dir: str) -> str:
+def filter_and_save(adata: ad.AnnData, output_dir: Path) -> str:
     """Filter out low-quality cells and write a filtered .h5ad file."""
     filtered_path = os.path.join(output_dir, "filtered_data.h5ad")
     adata[~adata.obs["low_quality"]].write(filtered_path)
@@ -252,7 +305,7 @@ def filter_and_save(adata: ad.AnnData, output_dir: str) -> str:
 
 
 def write_json_summary(
-    output_dir: str, metadata: Dict[str, Any], file_paths: Dict[str, str]
+    output_dir: Path, metadata: t.Dict[str, t.Any], file_paths: t.Dict[str, str]
 ) -> str:
     """Write a JSON summary report with key QC statistics and file paths."""
 
@@ -279,53 +332,64 @@ def write_json_summary(
 # Main workflow (importable)
 # -----------------------------------------------------------------------------
 def run_qc(
-    input_path: str,
-    output_dir: str = "qc_results",
-    mt_csv: Optional[str] = None,
-    ribo_csv: Optional[str] = None,
-    filter_cells: bool = False,
-) -> Dict[str, str]:
-    """Run the QC pipeline programmatically."""
-    logging.info(f"Loading data from {input_path}")
-    adata = sc.read_h5ad(input_path)
+    matrix: Path,
+    mt_csv: Path,
+    ribo_csv: Path,
+    min_genes: int,
+    max_genes: int,
+    min_cells: int,
+    max_mt: float,
+    max_ribo: t.Optional[float],
+    filter_cells: bool,
+    ensemble_lookup: t.Optional[Path] = None,
+) -> ad.AnnData:
+    """Run the QC pipeline programmatically and return the annotated matrix."""
+    logging.info("Loading data from %s", matrix)
+    adata = sc.read_h5ad(matrix)
 
-    # Load gene lists from CSV files if provided
-    mt_genes = None
-    ribo_genes = None
-    
-    if mt_csv:
-        logging.info(f"Loading mitochondrial genes from {mt_csv}")
-        mt_genes = _load_gene_list_from_csv(mt_csv)
-    
-    if ribo_csv:
-        logging.info(f"Loading ribosomal genes from {ribo_csv}")
-        ribo_genes = _load_gene_list_from_csv(ribo_csv)
+    if ensemble_lookup is not None:
+        logging.info("Adding ensemble metadata from %s", ensemble_lookup)
+        adata = add_ensemble_data(adata, ensemble_lookup)
 
-    logging.info("Computing QC metrics ...")
+    logging.info("Loading mitochondrial genes from %s", mt_csv)
+    mt_genes = _load_gene_list_from_csv(mt_csv)
+    logging.info("Loading ribosomal genes from %s", ribo_csv)
+    ribo_genes = _load_gene_list_from_csv(ribo_csv)
+
+    logging.info("Computing QC metrics")
     adata = compute_qc_metrics(adata, mt_genes=mt_genes, ribo_genes=ribo_genes)
 
-    logging.info("Flagging low-quality cells ...")
+    logging.info("Flagging low-quality cells")
     qc_df = flag_low_quality_cells(
-        adata, 
-        min_genes=200,
-        max_genes=7500,
-        max_mt=5.0,
-        min_ribo=None,
+        adata,
+        min_genes=min_genes,
+        max_genes=max_genes,
+        max_mt=max_mt,
+        max_ribo=max_ribo,
     )
     summary = summarize_qc(qc_df)
 
-    per_cell_path, summary_path = write_qc_outputs(qc_df, summary, output_dir)
+    per_cell_path, summary_path = write_qc_outputs(qc_df, summary, QC_OUTPUT_DIR)
 
     total_cells = adata.n_obs
     low_quality_cells = int(adata.obs["low_quality"].sum())
-    pct_removed = (low_quality_cells / total_cells) * 100
-    mean_mt = float(summary.loc['pct_counts_mt', 'mean'])
-    mean_ribo = float(summary.loc['pct_counts_ribo', 'mean'])
+    filtered_cells = int(total_cells - low_quality_cells)
+    pct_removed = (low_quality_cells / total_cells) * 100 if total_cells else 0.0
+    mean_mt = float(summary.loc["pct_counts_mt", "mean"])
+    mean_ribo = float(summary.loc["pct_counts_ribo", "mean"])
 
-    logging.info(f"Total cells: {total_cells}")
-    logging.info(f"Flagged low-quality cells: {low_quality_cells} ({pct_removed:.2f}%)")
-    logging.info(f"Mean mitochondrial %: {mean_mt:.2f}")
-    logging.info(f"Mean ribosomal %: {mean_ribo:.2f}")
+    logging.info("Total cells: %s", total_cells)
+    logging.info(
+        "Flagged low-quality cells: %s (%.2f%%)", low_quality_cells, pct_removed
+    )
+    logging.info("Cells remaining after QC filtering: %s", filtered_cells)
+    logging.info("Mean mitochondrial %%: %.2f", mean_mt)
+    logging.info("Mean ribosomal %%: %.2f", mean_ribo)
+
+    if filtered_cells < min_cells:
+        raise ValueError(
+            f"Insufficient cells after QC filtering: {filtered_cells} remaining, requires at least {min_cells}."
+        )
 
     results = {
         "qc_per_cell_csv": per_cell_path,
@@ -333,38 +397,83 @@ def run_qc(
     }
 
     if filter_cells:
-        logging.info("Filtering low-quality cells ...")
-        filtered_path = filter_and_save(adata, output_dir)
+        logging.info("Filtering low-quality cells")
+        filtered_path = filter_and_save(adata, QC_OUTPUT_DIR)
         results["filtered_h5ad"] = filtered_path
     else:
-        logging.info("Filtering skipped (use filter_cells=True or --filter).")
+        logging.info("Filtering skipped")
 
     metadata = {
-        "input_file": os.path.abspath(input_path),
+        "input_file": os.path.abspath(matrix),
         "total_cells": int(total_cells),
         "low_quality_cells": int(low_quality_cells),
         "percent_low_quality": round(pct_removed, 2),
-        "mean_n_genes_by_counts": round(summary.loc['n_genes_by_counts', 'mean'], 3),
-        "mean_total_counts": round(summary.loc['total_counts', 'mean'], 3),
-        "mean_pct_counts_in_top_20_genes": round(summary.loc['pct_counts_in_top_20_genes', 'mean'], 3),
-        "mean_pct_counts_in_top_50_genes": round(summary.loc['pct_counts_in_top_50_genes', 'mean'], 3),
+        "mean_n_genes_by_counts": round(summary.loc["n_genes_by_counts", "mean"], 3),
+        "mean_total_counts": round(summary.loc["total_counts", "mean"], 3),
+        "mean_pct_counts_in_top_20_genes": round(
+            summary.loc["pct_counts_in_top_20_genes", "mean"], 3
+        ),
+        "mean_pct_counts_in_top_50_genes": round(
+            summary.loc["pct_counts_in_top_50_genes", "mean"], 3
+        ),
         "mean_pct_counts_mt": round(mean_mt, 3),
         "mean_pct_counts_ribo": round(mean_ribo, 3),
         "thresholds": {
-            "min_genes": 200,
-            "max_genes": 7500,
-            "max_mt": 5.0,
-            "min_ribo": None,
-            "mt_csv": mt_csv,
-            "ribo_csv": ribo_csv,
+            "min_genes": min_genes,
+            "max_genes": max_genes,
+            "min_cells": min_cells,
+            "max_mt": max_mt,
+            "max_ribo": max_ribo,
+            "mt_csv": str(mt_csv),
+            "ribo_csv": str(ribo_csv),
+            "ensemble_lookup": str(ensemble_lookup) if ensemble_lookup else None,
         },
     }
 
-    json_path = write_json_summary(output_dir, metadata, results)
+    json_path = write_json_summary(QC_OUTPUT_DIR, metadata, results)
     results["qc_summary_json"] = json_path
 
-    logging.info("QC analysis complete.")
-    return results
+    adata.obs[QC_PREDICTION_COLUMN] = np.where(adata.obs["low_quality"], "fail", "pass")
+    adata.uns["qc_summary"] = metadata
+    adata.uns["qc_files"] = results
+
+    logging.info("QC analysis complete")
+    return adata
+
+
+class QcAlgorithm(Algorithm[QcOrganMetadata, QcOptions]):
+    def __init__(self):
+        super().__init__(prediction_column=QC_PREDICTION_COLUMN, is_pan_organ=True)
+
+    def do_run(
+        self,
+        matrix: Path,
+        organ: str,
+        metadata: QcOrganMetadata,
+        options: QcOptions,
+    ) -> RunResult:
+        # CLI options take precedence; otherwise use organ-specific metadata thresholds.
+        max_mt = options.get("max_mt")
+        if max_mt is None:
+            max_mt = metadata.get("max_mt", DEFAULT_MAX_MT)
+
+        max_ribo = options.get("max_ribo")
+        if max_ribo is None:
+            max_ribo = metadata.get("max_ribo", DEFAULT_MAX_RIBO)
+
+        data = run_qc(
+            matrix=matrix,
+            mt_csv=options["mt_csv"],
+            ribo_csv=options["ribo_csv"],
+            min_genes=options["min_genes"],
+            max_genes=options["max_genes"],
+            min_cells=options["min_cells"],
+            max_mt=max_mt,
+            max_ribo=max_ribo,
+            filter_cells=options["filter_cells"],
+            ensemble_lookup=options.get("ensemble_lookup"),
+        )
+        return {"data": data, "organ_level": "quality_control"}
 
 
 # -----------------------------------------------------------------------------
@@ -375,14 +484,9 @@ def main() -> None:
     parser = _get_arg_parser()
     args = parser.parse_args()
     _setup_logging(args.log_level)
-
-    run_qc(
-        input_path=args.input,
-        output_dir=args.output,
-        mt_csv=args.mt_csv,
-        ribo_csv=args.ribo_csv,
-        filter_cells=args.filter,
-    )
+    algorithm = QcAlgorithm()
+    result = algorithm.run(**args.__dict__)
+    result.save()
 
 
 if __name__ == "__main__":

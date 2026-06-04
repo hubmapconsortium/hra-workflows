@@ -11,6 +11,7 @@ requirements:
       - $include: ./js/options-util.js
   SchemaDefRequirement:
     types:
+      - $import: ../containers/qc/options.yml
       - $import: ../containers/azimuth/options.yml
       - $import: ../containers/celltypist/options.yml
       - $import: ../containers/popv/options.yml
@@ -28,6 +29,7 @@ inputs:
     type:
       type: record
       fields:
+          qc: ../containers/qc/options.yml#options?
           azimuth: ../containers/azimuth/options.yml#options?
           celltypist: ../containers/celltypist/options.yml#options?
           popv: ../containers/popv/options.yml#options?
@@ -51,7 +53,7 @@ steps:
       matrix: matrix
       organ: organ
       algorithm: algorithm
-    out: [annotated_matrix, report]
+    out: [annotated_matrix, report, qc_results]
 
   check_result:
     run: ./check_annotation_report.cwl
@@ -125,7 +127,14 @@ steps:
     run: ./collect-files.cwl
     in:
       files:
-        source: [check_result/matrix_or_null, summarize/summary, crosswalk/annotations, selectReport/report]
+        source: [
+          check_result/matrix_or_null,
+          summarize/summary,
+          crosswalk/annotations,
+          crosswalk/matrix_with_crosswalking,
+          selectReport/report,
+          annotate/qc_results
+        ]
         pickValue: all_non_null
       outputDirectory:
         source: algorithm

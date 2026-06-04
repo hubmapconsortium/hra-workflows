@@ -22,16 +22,18 @@ inputs:
     type:
       type: record
       fields:
-          azimuth: ../containers/azimuth/options.yml#options?
-          celltypist: ../containers/celltypist/options.yml#options?
-          popv: ../containers/popv/options.yml#options?
-          pan-human-azimuth: ../containers/pan-human-azimuth/options.yml#options?
-          frmatch: ../containers/frmatch/options.yml#options?
+        qc: ../containers/qc/options.yml#options?
+        azimuth: ../containers/azimuth/options.yml#options?
+        celltypist: ../containers/celltypist/options.yml#options?
+        popv: ../containers/popv/options.yml#options?
+        pan-human-azimuth: ../containers/pan-human-azimuth/options.yml#options?
+        frmatch: ../containers/frmatch/options.yml#options?
 
 outputs:
   annotated_matrix:
     type: File
     outputSource:
+      - qc/filtered_matrix
       - azimuth/annotated_matrix
       - celltypist/annotated_matrix
       - popv/annotated_matrix
@@ -41,14 +43,31 @@ outputs:
   report:
     type: File
     outputSource:
+      - qc/report
       - azimuth/report
       - celltypist/report
       - popv/report
       - pan-human-azimuth/report
       - frmatch/report
     pickValue: first_non_null
+  qc_results:
+    type: Directory
+    outputSource:
+      - qc/qc_results
+    pickValue: first_non_null
 
 steps:
+  qc:
+    run: ../containers/qc/pipeline.cwl
+    when: $(!!inputs.options)
+    in:
+      matrix: matrix
+      organ: organ
+      options:
+        source: algorithm
+        valueFrom: $(inputs.options.qc || null)
+    out: [filtered_matrix, report, qc_results]
+
   azimuth:
     run: ../containers/azimuth/pipeline.cwl
     when: $(!!inputs.options)

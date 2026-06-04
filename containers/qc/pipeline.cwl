@@ -12,8 +12,8 @@ requirements:
 baseCommand: python
 arguments:
   - /main.py
-  - "--log-level"
-  - "40"
+  - --output-matrix
+  - filtered_matrix.h5ad
 
 inputs:
   matrix:
@@ -21,10 +21,24 @@ inputs:
     label: Data to run QC on in h5ad format
     inputBinding:
       position: 0
-  options: "./options.yml#options?"
+  organ:
+    type: string
+    label: Organ uberon id in format 'UBERON:1234'
+    inputBinding:
+      prefix: --organ
+  options: ./options.yml#options
 
 outputs:
-  outputDir:
+  filtered_matrix:
+    type: File
+    outputBinding:
+      glob: filtered_matrix.h5ad
+    doc: "Matrix produced by the QC step for downstream annotation."
+  report:
+    type: File
+    outputBinding:
+      glob: report.json
+  qc_results:
     type: Directory
     outputBinding:
       glob: 'qc_results'
@@ -48,7 +62,7 @@ outputs:
       glob: "qc_results/qc_summary.json"
     doc: "JSON summary of QC results and thresholds."
 
-  filteredH5ad:
+  filtered_qc_matrix:
     type: File?
     outputBinding:
       glob: "qc_results/filtered_data.h5ad"

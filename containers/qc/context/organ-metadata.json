@@ -1,0 +1,76 @@
+{
+  "UBERON:0003889": {
+    "organ_name": "fallopian tube",
+    "max_mt": 5,
+    "max_ribo": 10
+  },
+  "UBERON:0000947": "UBERON:0000948",
+  "UBERON:0000948": {
+    "organ_name": "heart",
+    "max_mt": 17,
+    "max_ribo": 10
+  },
+  "UBERON:0004538": "UBERON:0002113",
+  "UBERON:0004539": "UBERON:0002113",
+  "UBERON:0002113": {
+    "organ_name": "kidney",
+    "max_mt": 20,
+    "max_ribo": 17
+  },
+  "UBERON:0000059": {
+    "organ_name": "large intestine",
+    "max_mt": 6,
+    "max_ribo": 15
+  },
+  "UBERON:0002107": {
+    "organ_name": "liver",
+    "max_mt": 5,
+    "max_ribo": 5
+  },
+  "UBERON:0002168": "UBERON:0002048",
+  "UBERON:0002178": "UBERON:0002048",
+  "UBERON:0002177": "UBERON:0002048",
+  "UBERON:0002167": "UBERON:0002048",
+  "UBERON:0002048": {
+    "organ_name": "lung",
+    "max_mt": 15,
+    "max_ribo": 10
+  },
+  "UBERON:0002182": {
+    "organ_name": "main bronchus",
+    "max_mt": 7,
+    "max_ribo": 5
+  },
+  "UBERON:0002118": "UBERON:0000992",
+  "UBERON:0002119": "UBERON:0000992",
+  "UBERON:0000992": {
+    "organ_name": "ovary",
+    "max_mt": 5,
+    "max_ribo": 10
+  },
+  "UBERON:0001264": {
+    "organ_name": "pancreas",
+    "max_mt": 5,
+    "max_ribo": 5
+  },
+  "UBERON:0001987": {
+    "organ_name": "placenta",
+    "max_mt": 3,
+    "max_ribo": 2
+  },
+  "UBERON:0002097": {
+    "organ_name": "skin",
+    "max_mt": 12,
+    "max_ribo": 60
+  },
+  "UBERON:0002108": {
+    "organ_name": "small intestine",
+    "max_mt": 6,
+    "max_ribo": 15
+  },
+  "UBERON:0000995": {
+    "organ_name": "uterus",
+    "max_mt": 15,
+    "max_ribo": 20
+  }
+}

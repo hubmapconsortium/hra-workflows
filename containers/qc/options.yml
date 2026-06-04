@@ -2,17 +2,23 @@ type: record
 name: options
 label: qc specific options
 fields:
-  mtPrefix:
-    type: string?
+  mtCsv:
+    type: File?
     inputBinding:
-      prefix: '--mt-prefix'
-    doc: 'Prefix used to identify mitochondrial genes.'
+      prefix: '--mt-csv'
+    doc: 'CSV file with mitochondrial gene information.'
 
-  riboPrefix:
-    type: string[]?
+  riboCsv:
+    type: File?
     inputBinding:
-      prefix: '--ribo-prefix'
-    doc: 'Prefixes used to identify ribosomal genes.'
+      prefix: '--ribo-csv'
+    doc: 'CSV file with ribosomal gene information.'
+
+  ensembleLookup:
+    type: File?
+    inputBinding:
+      prefix: '--ensemble-lookup'
+    doc: 'Optional ensemble lookup CSV used to enrich gene metadata before QC.'
 
   minGenes:
     type: int?
@@ -26,17 +32,23 @@ fields:
       prefix: '--max-genes'
     doc: 'Maximum number of genes per cell.'
 
+  minCells:
+    type: int?
+    inputBinding:
+      prefix: '--min-cells'
+    doc: 'Minimum number of cells required after QC filtering.'
+
   maxMt:
     type: float?
     inputBinding:
       prefix: '--max-mt'
     doc: 'Maximum percent of mitochondrial gene counts per cell.'
 
-  minRibo:
+  maxRibo:
     type: float?
     inputBinding:
-      prefix: '--min-ribo'
-    doc: 'Minimum percent of ribosomal gene counts per cell (optional).'
+      prefix: '--max-ribo'
+    doc: 'Maximum percent of ribosomal gene counts per cell (optional).'
 
   filterCells:
     type: boolean?

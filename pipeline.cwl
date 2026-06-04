@@ -8,6 +8,7 @@ requirements:
   SubworkflowFeatureRequirement: {}
   SchemaDefRequirement:
     types:
+      - $import: ./containers/qc/options.yml
       - $import: ./containers/azimuth/options.yml
       - $import: ./containers/celltypist/options.yml
       - $import: ./containers/popv/options.yml
@@ -27,6 +28,7 @@ inputs:
       items:
         type: record
         fields:
+          qc: ./containers/qc/options.yml#options?
           azimuth: ./containers/azimuth/options.yml#options?
           celltypist: ./containers/celltypist/options.yml#options?
           popv: ./containers/popv/options.yml#options?
