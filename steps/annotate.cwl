@@ -9,6 +9,7 @@ requirements:
   SubworkflowFeatureRequirement: {}
   SchemaDefRequirement:
     types:
+      - $import: ../containers/qc/options.yml
       - $import: ../containers/azimuth/options.yml
       - $import: ../containers/celltypist/options.yml
       - $import: ../containers/popv/options.yml

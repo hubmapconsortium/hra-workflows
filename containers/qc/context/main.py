@@ -386,11 +386,6 @@ def run_qc(
     logging.info("Mean mitochondrial %%: %.2f", mean_mt)
     logging.info("Mean ribosomal %%: %.2f", mean_ribo)
 
-    if filtered_cells < min_cells:
-        raise ValueError(
-            f"Insufficient cells after QC filtering: {filtered_cells} remaining, requires at least {min_cells}."
-        )
-
     results = {
         "qc_per_cell_csv": per_cell_path,
         "qc_summary_csv": summary_path,
@@ -438,6 +433,12 @@ def run_qc(
     adata.uns["qc_files"] = results
 
     logging.info("QC analysis complete")
+
+    if filtered_cells < min_cells:
+        raise ValueError(
+            f"Insufficient cells after QC filtering: {filtered_cells} remaining, requires at least {min_cells}."
+        )
+
     return adata
 
 
