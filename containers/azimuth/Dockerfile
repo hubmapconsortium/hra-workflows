@@ -1,4 +1,4 @@
-FROM satijalab/azimuth:0.5.0
+FROM satijalab/azimuth:0.4.6
 
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
 	&& update-ca-certificates \
