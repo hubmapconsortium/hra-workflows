@@ -1,4 +1,4 @@
-FROM satijalab/azimuth:0.4.6
+FROM satijalab/azimuth:0.5.0
 
 RUN R --no-echo -e "install.packages('rjson', repo='https://cloud.r-project.org')"
 
