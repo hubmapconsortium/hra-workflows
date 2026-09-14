@@ -45,6 +45,16 @@ algorithms:
 ### 3. Running the job
 After creating a job file running the annotation tools is as simple as running `cwl-runner pipeline.cwl my-job.yml` (replace `my-job.yml` with your job file).
 
+## Running on Mac
+
+Since container images are built for `linux/amd64` only, Mac users must:
+
+1. Ensure Docker Desktop is running with sufficient resources (8GB+ memory, 50GB+ disk)
+2. Set the Docker platform environment variable:
+   ```bash
+   export DOCKER_DEFAULT_PLATFORM=linux/amd64
+```
+
 ## Adding a new annotation tool
 
 ### 1. Tool folder structure
