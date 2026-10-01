@@ -17,6 +17,7 @@ requirements:
       - $import: ../containers/popv/options.yml
       - $import: ../containers/pan-human-azimuth/options.yml
       - $import: ../containers/frmatch/options.yml
+      - $import: ../containers/author/options.yml
       - $import: ../containers/crosswalking/options.yml
       - $import: ../containers/gene-expression/options.yml
       - $import: ../containers/nsforest/options.yml
@@ -35,6 +36,7 @@ inputs:
           popv: ../containers/popv/options.yml#options?
           pan-human-azimuth: ../containers/pan-human-azimuth/options.yml#options?
           frmatch: ../containers/frmatch/options.yml#options?
+          author: ../containers/author/options.yml#options?
           crosswalk: ../containers/crosswalking/options.yml#options?
           geneExpression: ../containers/gene-expression/options.yml#options?
           nsforest: ../containers/nsforest/options.yml#options?
