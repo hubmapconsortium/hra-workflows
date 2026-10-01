@@ -15,6 +15,7 @@ requirements:
       - $import: ../containers/popv/options.yml
       - $import: ../containers/pan-human-azimuth/options.yml
       - $import: ../containers/frmatch/options.yml
+      - $import: ../containers/author/options.yml
 
 inputs:
   matrix: File
@@ -29,6 +30,7 @@ inputs:
         popv: ../containers/popv/options.yml#options?
         pan-human-azimuth: ../containers/pan-human-azimuth/options.yml#options?
         frmatch: ../containers/frmatch/options.yml#options?
+        author: ../containers/author/options.yml#options?
 
 outputs:
   annotated_matrix:
@@ -40,6 +42,7 @@ outputs:
       - popv/annotated_matrix
       - pan-human-azimuth/annotated_matrix
       - frmatch/annotated_matrix
+      - author/annotated_matrix
     pickValue: first_non_null
   report:
     type: File
@@ -50,6 +53,7 @@ outputs:
       - popv/report
       - pan-human-azimuth/report
       - frmatch/report
+      - author/report
     pickValue: first_non_null
   qc_results:
     type: Directory
@@ -122,4 +126,15 @@ steps:
       options:
         source: algorithm
         valueFrom: $(inputs.options.frmatch || null)
+    out: [annotated_matrix, report]
+
+  author:
+    run: ../containers/author/pipeline.cwl
+    when: $(!!inputs.options)
+    in:
+      matrix: matrix
+      organ: organ
+      options:
+        source: algorithm
+        valueFrom: $(inputs.options.author || null)
     out: [annotated_matrix, report]

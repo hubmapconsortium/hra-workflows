@@ -1,0 +1,24 @@
+type: record
+name: options
+label: Author assigned cell type specific options
+fields:
+  labelColumn:
+    type: string
+    label: Obs column containing the author assigned cell type labels
+    inputBinding:
+      prefix: --label-column
+  organLevel:
+    type: string?
+    label: Organ level used when crosswalking the author labels
+    inputBinding:
+      prefix: --organ-level
+  queryLayersKey:
+    type: string?
+    label: Data layer to use
+    inputBinding:
+      prefix: --query-layers-key
+  keepUnlabeled:
+    type: boolean?
+    label: Keep cells without an author assigned cell type
+    inputBinding:
+      prefix: --keep-unlabeled
